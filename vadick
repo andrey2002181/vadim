@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle Jump HTML5</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #87CEFA;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #87CEFA;
+            display: block;
+        }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+<div class="game-over" id="gameOverText" style="display: none;">
+    Game Over! Press "R" to Restart
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const WIDTH = 400;
+    const HEIGHT = 600;
+    const GRAVITY = 0.4;
+    const JUMP_STRENGTH = -10;
+    const PLAYER_SPEED = 5;
+    const PLATFORM_COUNT = 6;
+
+    let player = {
+        x: WIDTH / 2,
+        y: HEIGHT - 60,
+        width: 60,
+        height: 60,
+        velocity_y: JUMP_STRENGTH,
+        is_jumping: false,
+        imageLeft: new Image(),
+        imageRight: new Image(),
+        direction: 'right'
+    };
+
+    let platforms = [];
+    let gameOver = false;
+
+    player.imageLeft.src = 'player.png';
+    player.imageRight.src = 'player.png';
+
+    const platformImage = new Image();
+    platformImage.src = 'platform.png';
+
+    const springPlatformImage = new Image();
+    springPlatformImage.src = 'spring_platform.png';
+
+    const speedPlatformImage = new Image();
+    speedPlatformImage.src = 'speed_platform.png';
+
+    // Класс платформы
+    class Platform {
+        constructor(x, y, type = 'normal') {
+            this.x = x;
+            this.y = y;
+            this.width = 80;
+            this.height = 20;
+            this.type = type;
+            this.jumpStrength = JUMP_STRENGTH;
+
+            // Выбор типа платформы
+            if (this.type === 'spring') {
+                this.image = springPlatformImage;
+                this.jumpStrength = -15;
+            } else if (this.type === 'speed') {
+                this.image = speedPlatformImage;
+                this.jumpStrength = JUMP_STRENGTH;
+            } else {
+                this.image = platformImage;
+            }
+
+            // Платформа будет двигаться с вероятностью 20%
+            this.isMoving = Math.random() < 0.2;
+            this.moveSpeed = Math.random() < 0.5 ? 2 : -2;
+        }
+
+        update() {
+            if (this.isMoving) {
+                this.x += this.moveSpeed;
+                if (this.x <= 0 || this.x >= WIDTH - this.width) {
+                    this.moveSpeed = -this.moveSpeed;
+                }
+            }
+        }
+
+        draw() {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        }
+    }
+
+    // Функция для отображения текста
+    function drawText(text, size, x, y) {
+        ctx.font = `${size}px Arial`;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(text, x, y);
+    }
+
+    // Функция для обновления игрока
+    function updatePlayer() {
+        player.velocity_y += GRAVITY;
+        player.y += player.velocity_y;
+
+        // Проверка на столкновение с платформами
+        for (const platform of platforms) {
+            if (platform.x < player.x + player.width && player.x < platform.x + platform.width) {
+                if (platform.y < player.y + player.height && player.y + player.height <= platform.y + 10 && player.velocity_y > 0) {
+                    player.velocity_y = platform.jumpStrength;
+                    player.y = platform.y - player.height;
+                    player.is_jumping = true;
+                }
+            }
+        }
+
+        if (player.y > HEIGHT) {
+            gameOver = true; // Игрок упал
+        }
+    }
+
+    // Функция для отрисовки игрока
+    function drawPlayer() {
+        const image = player.direction === 'right' ? player.imageRight : player.imageLeft;
+        ctx.drawImage(image, player.x, player.y, player.width, player.height);
+    }
+
+    // Управление игроком
+    function movePlayer() {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                player.x -= PLAYER_SPEED;
+                player.direction = 'left';
+                if (player.x < 0) player.x = WIDTH;
+            }
+            if (e.key === 'ArrowRight') {
+                player.x += PLAYER_SPEED;
+                player.direction = 'right';
+                if (player.x > WIDTH) player.x = 0;
+            }
+        });
+    }
+
+    // Генерация платформ
+    function generatePlatforms() {
+        platforms = [];
+        for (let i = 0; i < PLATFORM_COUNT; i++) {
+            const x = Math.random() * (WIDTH - 80);
+            const y = HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT);
+            const type = Math.random() < 0.33 ? 'spring' : (Math.random() < 0.5 ? 'speed' : 'normal');
+            platforms.push(new Platform(x, y, type));
+        }
+    }
+
+    // Обновление состояния игры
+    function updateGame() {
+        if (gameOver) {
+            document.getElementById('gameOverText').style.display = 'block';
+            return;
+        }
+
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        updatePlayer();
+        drawPlayer();
+
+        for (const platform of platforms) {
+            platform.update();
+            platform.draw();
+        }
+
+        if (player.y < HEIGHT / 2) {
+            player.y = HEIGHT / 2;
+            platforms.forEach(platform => platform.y += Math.abs(player.velocity_y));
+            platforms.forEach(platform => {
+                if (platform.y > HEIGHT) {
+                    platform.y = 0;
+                    platform.x = Math.random() * (WIDTH - platform.width);
+                    platform.type = Math.random() < 0.33 ? 'spring' : (Math.random() < 0.5 ? 'speed' : 'normal');
+                }
+            });
+        }
+
+        requestAnimationFrame(updateGame);
+    }
+
+    // Слушаем нажатие клавиши для перезапуска
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'r' || e.key === 'R') {
+            if (gameOver) {
+                gameOver = false;
+                player = {
+                    x: WIDTH / 2,
+                    y: HEIGHT - 60,
+                    width: 60,
+                    height: 60,
+                    velocity_y: JUMP_STRENGTH,
+                    is_jumping: false,
+                    direction: 'right',
+                    imageLeft: new Image(),
+                    imageRight: new Image()
+                };
+                player.imageLeft.src = 'player.png';
+                player.imageRight.src = 'player.png';
+                generatePlatforms();
+                document.getElementById('gameOverText').style.display = 'none';
+                updateGame();
+            }
+        }
+    });
+
+    // Инициализация игры
+    function startGame() {
+        generatePlatforms();
+        movePlayer();
+        updateGame();
+    }
+
+    startGame();
+</script>
+
+</body>
+</html>
