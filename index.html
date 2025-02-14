@@ -8,49 +8,46 @@
         body {
             margin: 0;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #87CEEB;
         }
         canvas {
             display: block;
+        }
+        .restart-btn {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 24px;
+            background: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <button id="restartBtn" class="restart-btn">Restart</button>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-
-        // Размеры экрана
+        const restartBtn = document.getElementById("restartBtn");
+        
         const WIDTH = window.innerWidth;
         const HEIGHT = window.innerHeight;
-
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
-
-        // Константы
+        
         const GRAVITY = 0.4;
         const JUMP_STRENGTH = -10;
-        const PLATFORM_COUNT = 6;
         const PLAYER_SPEED = 5;
-
-        // Цвета
-        const BACKGROUND_COLOR = "#87CEEB";
-        const TEXT_COLOR = "white";
-
-        // Изображения
-        const playerImageLeft = new Image();
-        const playerImageRight = new Image();
-        const platformImage = new Image();
-        const springPlatformImage = new Image();
-        const speedPlatformImage = new Image();
-
-        playerImageLeft.src = "player.png";  // Замените на ваш путь к изображению
-        playerImageRight.src = "player.png"; // Замените на ваш путь к изображению
-        platformImage.src = "platform.png";  // Замените на ваш путь к изображению
-        springPlatformImage.src = "spring_platform.png"; // Замените на ваш путь к изображению
-        speedPlatformImage.src = "speed_platform.png"; // Замените на ваш путь к изображению
-
-        // Класс игрока
+        
         class Player {
             constructor() {
                 this.x = WIDTH / 2;
@@ -58,180 +55,55 @@
                 this.width = 60;
                 this.height = 60;
                 this.velocity_y = JUMP_STRENGTH;
-                this.is_jumping = false;
-                this.image = playerImageLeft;
-                this.direction = "left";  // Направление по умолчанию
             }
-
-            move(platforms) {
+            move() {
                 this.velocity_y += GRAVITY;
                 this.y += this.velocity_y;
-
-                if (this.y > HEIGHT) {
-                    return false;  // Игрок упал за пределы экрана
-                }
-
-                for (const platform of platforms) {
-                    if (platform.x < this.x + this.width && this.x < platform.x + platform.width) {
-                        if (platform.y < this.y + this.height && this.y + this.height < platform.y + 10 && this.velocity_y > 0) {
-                            this.velocity_y = platform.jump_strength;
-                            this.y = platform.y - this.height;  // Совмещение с платформой
-                            this.is_jumping = true;
-                        }
-                    }
-                }
+                if (this.y > HEIGHT) return false;
                 return true;
             }
-
             draw() {
-                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-            }
-
-            updateDirection(direction) {
-                if (direction === "left") {
-                    this.image = playerImageLeft;
-                } else if (direction === "right") {
-                    this.image = playerImageRight;
-                }
+                ctx.fillStyle = "red";
+                ctx.fillRect(this.x, this.y, this.width, this.height);
             }
         }
-
-        // Класс платформы
-        class Platform {
-            constructor(x, y, platform_type = "normal") {
-                this.x = x;
-                this.y = y;
-                this.width = 80;
-                this.height = 20;
-                this.platform_type = platform_type;
-                this.jump_strength = JUMP_STRENGTH;  // Обычные платформы дают стандартный прыжок
-                this.move_speed = Math.random() < 0.2 ? 2 : -2;  // Скорость движения платформы
-                this.is_moving = Math.random() < 0.2;  // Платформа с 20% вероятностью будет двигаться
-
-                if (platform_type === "spring") {
-                    this.image = springPlatformImage;
-                    this.jump_strength = -15;  // Платформа с пружиной
-                } else if (platform_type === "speed") {
-                    this.image = speedPlatformImage;
-                    this.jump_strength = JUMP_STRENGTH;  // Платформа с ускорением
-                } else {
-                    this.image = platformImage;  // Обычная платформа
-                }
-            }
-
-            update() {
-                if (this.is_moving) {
-                    this.x += this.move_speed;
-                    if (this.x <= 0 || this.x >= WIDTH - this.width) {
-                        this.move_speed = -this.move_speed;
-                    }
-                }
-            }
-
-            draw() {
-                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-            }
-        }
-
-        // Функция для отображения текста
-        function drawText(text, size, x, y) {
-            ctx.font = size + "px Arial";
-            ctx.fillStyle = TEXT_COLOR;
-            ctx.fillText(text, x, y);
-        }
-
-        // Главная игра
+        
         let player;
-        let platforms;
         let isGameOver = false;
-        let touchStartX = null;
-
+        
         function resetGame() {
             player = new Player();
-            platforms = [];
-            for (let i = 0; i < PLATFORM_COUNT; i++) {
-                platforms.push(new Platform(Math.random() * (WIDTH - 80), HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT), Math.random() < 0.2 ? "spring" : "normal"));
-            }
             isGameOver = false;
+            restartBtn.style.display = "none";
+            gameLoop();
         }
-
+        
         function gameOverScreen() {
-            ctx.fillStyle = BACKGROUND_COLOR;
+            ctx.fillStyle = "black";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
-            drawText("Game Over", 64, WIDTH / 4, HEIGHT / 3);
-            drawText("Press R to Restart", 32, WIDTH / 4, HEIGHT / 2);
+            ctx.fillStyle = "white";
+            ctx.font = "48px Arial";
+            ctx.fillText("Game Over", WIDTH / 3, HEIGHT / 3);
+            restartBtn.style.display = "block";
         }
-
+        
         function gameLoop() {
-            if (isGameOver) {
-                gameOverScreen();
-                return;
-            }
-
-            ctx.fillStyle = BACKGROUND_COLOR;
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-            if (!player.move(platforms)) {
-                isGameOver = true;
-            }
-
+            if (isGameOver) return gameOverScreen();
+            ctx.clearRect(0, 0, WIDTH, HEIGHT);
+            isGameOver = !player.move();
             player.draw();
-
-            for (const platform of platforms) {
-                platform.update();
-                platform.draw();
-                if (player.y < HEIGHT / 2) {
-                    player.y = HEIGHT / 2;
-                    for (const platform of platforms) {
-                        platform.y += Math.abs(player.velocity_y);
-                        if (platform.y > HEIGHT) {
-                            platform.y = 0;
-                            platform.x = Math.random() * (WIDTH - platform.width);
-                            platform.platform_type = Math.random() < 0.2 ? "spring" : "normal";
-                        }
-                    }
-                }
-            }
-
             requestAnimationFrame(gameLoop);
         }
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            player.x = WIDTH / 2;
-            player.y = HEIGHT - 60;
+        
+        window.addEventListener("touchstart", (e) => {
+            const touchX = e.touches[0].clientX;
+            if (touchX < WIDTH / 2) player.x -= PLAYER_SPEED;
+            else player.x += PLAYER_SPEED;
         });
-
-        // Управление касанием
-        canvas.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            if (touchStartX === null) return;
-
-            const touchEndX = e.touches[0].clientX;
-            const diffX = touchEndX - touchStartX;
-
-            if (diffX > 0) {
-                player.updateDirection("right");
-                player.x += PLAYER_SPEED;
-            } else if (diffX < 0) {
-                player.updateDirection("left");
-                player.x -= PLAYER_SPEED;
-            }
-
-            touchStartX = touchEndX;
-        });
-
-        canvas.addEventListener('touchend', () => {
-            touchStartX = null;
-        });
-
-        // Запуск игры
+        
+        restartBtn.addEventListener("click", resetGame);
+        
         resetGame();
-        gameLoop();
     </script>
 </body>
 </html>
