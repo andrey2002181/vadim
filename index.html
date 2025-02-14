@@ -42,21 +42,21 @@
         const ctx = canvas.getContext("2d");
         const restartButton = document.getElementById("restartButton");
 
-        const WIDTH = window.innerWidth;
-        const HEIGHT = window.innerHeight;
-        canvas.width = WIDTH;
-        canvas.height = HEIGHT;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         const GRAVITY = 0.4;
         const JUMP_STRENGTH = -10;
         const PLATFORM_COUNT = 6;
-        const PLAYER_SPEED = WIDTH * 0.02;
+        const PLAYER_SPEED = canvas.width * 0.02;
 
+        const background = new Image();
         const playerImageLeft = new Image();
         const playerImageRight = new Image();
         const platformImage = new Image();
         const springPlatformImage = new Image();
 
+        background.src = "background.jpg"; 
         playerImageLeft.src = "player_left.png";
         playerImageRight.src = "player_right.png";
         platformImage.src = "platform.png";
@@ -64,10 +64,10 @@
 
         class Player {
             constructor() {
-                this.x = WIDTH / 2;
-                this.y = HEIGHT - 80;
-                this.width = WIDTH * 0.15;
-                this.height = WIDTH * 0.15;
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 80;
+                this.width = canvas.width * 0.15;
+                this.height = this.width;
                 this.velocity_y = JUMP_STRENGTH;
                 this.image = playerImageLeft;
                 this.direction = "left";
@@ -77,7 +77,7 @@
                 this.velocity_y += GRAVITY;
                 this.y += this.velocity_y;
 
-                if (this.y > HEIGHT) {
+                if (this.y > canvas.height) {
                     return false;
                 }
 
@@ -109,7 +109,7 @@
             constructor(x, y, type = "normal") {
                 this.x = x;
                 this.y = y;
-                this.width = WIDTH * 0.2;
+                this.width = canvas.width * 0.2;
                 this.height = 10;
                 this.type = type;
                 this.jump_strength = type === "spring" ? -15 : JUMP_STRENGTH;
@@ -132,8 +132,8 @@
             for (let i = 0; i < PLATFORM_COUNT; i++) {
                 platforms.push(
                     new Platform(
-                        Math.random() * (WIDTH - WIDTH * 0.2),
-                        HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT),
+                        Math.random() * (canvas.width - canvas.width * 0.2),
+                        canvas.height - (i + 1) * (canvas.height / PLATFORM_COUNT),
                         Math.random() < 0.2 ? "spring" : "normal"
                     )
                 );
@@ -145,10 +145,10 @@
 
         function gameOverScreen() {
             ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "white";
             ctx.font = "48px Arial";
-            ctx.fillText("Game Over", WIDTH / 3, HEIGHT / 3);
+            ctx.fillText("Game Over", canvas.width / 3, canvas.height / 3);
             restartButton.style.display = "block";
         }
 
@@ -158,8 +158,7 @@
                 return;
             }
 
-            ctx.fillStyle = "#87CEEB";
-            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
             if (!player.move(platforms)) {
                 isGameOver = true;
@@ -169,13 +168,13 @@
 
             for (const platform of platforms) {
                 platform.draw();
-                if (player.y < HEIGHT / 2) {
-                    player.y = HEIGHT / 2;
+                if (player.y < canvas.height / 2) {
+                    player.y = canvas.height / 2;
                     for (const platform of platforms) {
                         platform.y += Math.abs(player.velocity_y);
-                        if (platform.y > HEIGHT) {
+                        if (platform.y > canvas.height) {
                             platform.y = 0;
-                            platform.x = Math.random() * (WIDTH - platform.width);
+                            platform.x = Math.random() * (canvas.width - platform.width);
                         }
                     }
                 }
