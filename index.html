@@ -2,16 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Doodle Jump Mobile</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            touch-action: none; /* Блокирует копирование при касании */
+            touch-action: none;
+            background: #87CEEB;
         }
         canvas {
             display: block;
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
         }
         .restart-btn {
             position: absolute;
@@ -46,26 +50,24 @@
         const GRAVITY = 0.4;
         const JUMP_STRENGTH = -10;
         const PLATFORM_COUNT = 6;
-        const PLAYER_SPEED = 5;
+        const PLAYER_SPEED = WIDTH * 0.02;
 
         const playerImageLeft = new Image();
         const playerImageRight = new Image();
         const platformImage = new Image();
         const springPlatformImage = new Image();
-        const speedPlatformImage = new Image();
 
         playerImageLeft.src = "player_left.png";
         playerImageRight.src = "player_right.png";
         platformImage.src = "platform.png";
         springPlatformImage.src = "spring_platform.png";
-        speedPlatformImage.src = "speed_platform.png";
 
         class Player {
             constructor() {
                 this.x = WIDTH / 2;
-                this.y = HEIGHT - 60;
-                this.width = 60;
-                this.height = 60;
+                this.y = HEIGHT - 80;
+                this.width = WIDTH * 0.15;
+                this.height = WIDTH * 0.15;
                 this.velocity_y = JUMP_STRENGTH;
                 this.image = playerImageLeft;
                 this.direction = "left";
@@ -80,11 +82,15 @@
                 }
 
                 for (const platform of platforms) {
-                    if (platform.x < this.x + this.width && this.x < platform.x + platform.width) {
-                        if (platform.y < this.y + this.height && this.y + this.height < platform.y + 10 && this.velocity_y > 0) {
-                            this.velocity_y = platform.jump_strength;
-                            this.y = platform.y - this.height;
-                        }
+                    if (
+                        this.x + this.width > platform.x &&
+                        this.x < platform.x + platform.width &&
+                        this.y + this.height > platform.y &&
+                        this.y + this.height < platform.y + 10 &&
+                        this.velocity_y > 0
+                    ) {
+                        this.velocity_y = platform.jump_strength;
+                        this.y = platform.y - this.height;
                     }
                 }
                 return true;
@@ -103,8 +109,8 @@
             constructor(x, y, type = "normal") {
                 this.x = x;
                 this.y = y;
-                this.width = 80;
-                this.height = 20;
+                this.width = WIDTH * 0.2;
+                this.height = 10;
                 this.type = type;
                 this.jump_strength = type === "spring" ? -15 : JUMP_STRENGTH;
                 this.image = type === "spring" ? springPlatformImage : platformImage;
@@ -124,7 +130,13 @@
             player = new Player();
             platforms = [];
             for (let i = 0; i < PLATFORM_COUNT; i++) {
-                platforms.push(new Platform(Math.random() * (WIDTH - 80), HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT), Math.random() < 0.2 ? "spring" : "normal"));
+                platforms.push(
+                    new Platform(
+                        Math.random() * (WIDTH - WIDTH * 0.2),
+                        HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT),
+                        Math.random() < 0.2 ? "spring" : "normal"
+                    )
+                );
             }
             isGameOver = false;
             restartButton.style.display = "none";
@@ -172,18 +184,17 @@
             requestAnimationFrame(gameLoop);
         }
 
-        window.addEventListener('resize', () => {
+        window.addEventListener("resize", () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            player.x = WIDTH / 2;
-            player.y = HEIGHT - 60;
+            resetGame();
         });
 
-        canvas.addEventListener('touchstart', (e) => {
+        canvas.addEventListener("touchstart", (e) => {
             touchStartX = e.touches[0].clientX;
         });
 
-        canvas.addEventListener('touchmove', (e) => {
+        canvas.addEventListener("touchmove", (e) => {
             if (touchStartX === null) return;
 
             const touchEndX = e.touches[0].clientX;
@@ -200,11 +211,11 @@
             touchStartX = touchEndX;
         });
 
-        canvas.addEventListener('touchend', () => {
+        canvas.addEventListener("touchend", () => {
             touchStartX = null;
         });
 
-        restartButton.addEventListener('click', resetGame);
+        restartButton.addEventListener("click", resetGame);
 
         resetGame();
     </script>
