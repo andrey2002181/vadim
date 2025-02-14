@@ -8,46 +8,58 @@
         body {
             margin: 0;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #87CEEB;
+            touch-action: none; /* Блокирует копирование при касании */
         }
         canvas {
             display: block;
         }
         .restart-btn {
-            display: none;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 20px 40px;
-            font-size: 24px;
-            background: #fff;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: red;
+            color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            display: none;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
-    <button id="restartBtn" class="restart-btn">Restart</button>
+    <button class="restart-btn" id="restartButton">Restart</button>
+
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const restartBtn = document.getElementById("restartBtn");
-        
+        const restartButton = document.getElementById("restartButton");
+
         const WIDTH = window.innerWidth;
         const HEIGHT = window.innerHeight;
         canvas.width = WIDTH;
         canvas.height = HEIGHT;
-        
+
         const GRAVITY = 0.4;
         const JUMP_STRENGTH = -10;
+        const PLATFORM_COUNT = 6;
         const PLAYER_SPEED = 5;
-        
+
+        const playerImageLeft = new Image();
+        const playerImageRight = new Image();
+        const platformImage = new Image();
+        const springPlatformImage = new Image();
+        const speedPlatformImage = new Image();
+
+        playerImageLeft.src = "player_left.png";
+        playerImageRight.src = "player_right.png";
+        platformImage.src = "platform.png";
+        springPlatformImage.src = "spring_platform.png";
+        speedPlatformImage.src = "speed_platform.png";
+
         class Player {
             constructor() {
                 this.x = WIDTH / 2;
@@ -55,54 +67,145 @@
                 this.width = 60;
                 this.height = 60;
                 this.velocity_y = JUMP_STRENGTH;
+                this.image = playerImageLeft;
+                this.direction = "left";
             }
-            move() {
+
+            move(platforms) {
                 this.velocity_y += GRAVITY;
                 this.y += this.velocity_y;
-                if (this.y > HEIGHT) return false;
+
+                if (this.y > HEIGHT) {
+                    return false;
+                }
+
+                for (const platform of platforms) {
+                    if (platform.x < this.x + this.width && this.x < platform.x + platform.width) {
+                        if (platform.y < this.y + this.height && this.y + this.height < platform.y + 10 && this.velocity_y > 0) {
+                            this.velocity_y = platform.jump_strength;
+                            this.y = platform.y - this.height;
+                        }
+                    }
+                }
                 return true;
             }
+
             draw() {
-                ctx.fillStyle = "red";
-                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+
+            updateDirection(direction) {
+                this.image = direction === "left" ? playerImageLeft : playerImageRight;
             }
         }
-        
+
+        class Platform {
+            constructor(x, y, type = "normal") {
+                this.x = x;
+                this.y = y;
+                this.width = 80;
+                this.height = 20;
+                this.type = type;
+                this.jump_strength = type === "spring" ? -15 : JUMP_STRENGTH;
+                this.image = type === "spring" ? springPlatformImage : platformImage;
+            }
+
+            draw() {
+                ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+            }
+        }
+
         let player;
+        let platforms;
         let isGameOver = false;
-        
+        let touchStartX = null;
+
         function resetGame() {
             player = new Player();
+            platforms = [];
+            for (let i = 0; i < PLATFORM_COUNT; i++) {
+                platforms.push(new Platform(Math.random() * (WIDTH - 80), HEIGHT - (i + 1) * (HEIGHT / PLATFORM_COUNT), Math.random() < 0.2 ? "spring" : "normal"));
+            }
             isGameOver = false;
-            restartBtn.style.display = "none";
+            restartButton.style.display = "none";
             gameLoop();
         }
-        
+
         function gameOverScreen() {
-            ctx.fillStyle = "black";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
             ctx.fillStyle = "white";
             ctx.font = "48px Arial";
             ctx.fillText("Game Over", WIDTH / 3, HEIGHT / 3);
-            restartBtn.style.display = "block";
+            restartButton.style.display = "block";
         }
-        
+
         function gameLoop() {
-            if (isGameOver) return gameOverScreen();
-            ctx.clearRect(0, 0, WIDTH, HEIGHT);
-            isGameOver = !player.move();
+            if (isGameOver) {
+                gameOverScreen();
+                return;
+            }
+
+            ctx.fillStyle = "#87CEEB";
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            if (!player.move(platforms)) {
+                isGameOver = true;
+            }
+
             player.draw();
+
+            for (const platform of platforms) {
+                platform.draw();
+                if (player.y < HEIGHT / 2) {
+                    player.y = HEIGHT / 2;
+                    for (const platform of platforms) {
+                        platform.y += Math.abs(player.velocity_y);
+                        if (platform.y > HEIGHT) {
+                            platform.y = 0;
+                            platform.x = Math.random() * (WIDTH - platform.width);
+                        }
+                    }
+                }
+            }
+
             requestAnimationFrame(gameLoop);
         }
-        
-        window.addEventListener("touchstart", (e) => {
-            const touchX = e.touches[0].clientX;
-            if (touchX < WIDTH / 2) player.x -= PLAYER_SPEED;
-            else player.x += PLAYER_SPEED;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            player.x = WIDTH / 2;
+            player.y = HEIGHT - 60;
         });
-        
-        restartBtn.addEventListener("click", resetGame);
-        
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (touchStartX === null) return;
+
+            const touchEndX = e.touches[0].clientX;
+            const diffX = touchEndX - touchStartX;
+
+            if (diffX > 0) {
+                player.updateDirection("right");
+                player.x += PLAYER_SPEED;
+            } else if (diffX < 0) {
+                player.updateDirection("left");
+                player.x -= PLAYER_SPEED;
+            }
+
+            touchStartX = touchEndX;
+        });
+
+        canvas.addEventListener('touchend', () => {
+            touchStartX = null;
+        });
+
+        restartButton.addEventListener('click', resetGame);
+
         resetGame();
     </script>
 </body>
