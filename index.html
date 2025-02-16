@@ -20,10 +20,13 @@
 </head>
 <body>
     <div id="map"></div>
-    <button id="save-btn" class="btn">Сохранить метку</button>
+    <button id="add-btn" class="btn">Добавить метку</button>
+    <button id="save-btn" class="btn" style="display: none;">Сохранить метку</button>
 
     <script>
         let map, userMarker, placeMarker;
+        const addBtn = document.getElementById("add-btn");
+        const saveBtn = document.getElementById("save-btn");
 
         function initMap() {
             map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
@@ -39,17 +42,26 @@
                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
                     iconSize: [25, 41] 
                 })}).addTo(map).bindPopup("Вы здесь");
-
-                placeMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
-                    .bindPopup("Переместите и сохраните").openPopup();
             });
 
-            document.getElementById("save-btn").addEventListener("click", () => {
+            addBtn.addEventListener("click", () => {
+                let center = map.getCenter();
+                placeMarker = L.marker(center, { draggable: true }).addTo(map)
+                    .bindPopup("Переместите и сохраните").openPopup();
+
+                addBtn.style.display = "none";
+                saveBtn.style.display = "block";
+            });
+
+            saveBtn.addEventListener("click", () => {
                 let pos = placeMarker.getLatLng();
                 let data = { latitude: pos.lat, longitude: pos.lng };
 
                 Telegram.WebApp.sendData(JSON.stringify(data));  
-                alert("Метка сохранена!"); // Оставляем приложение открытым
+                alert("Метка сохранена!");
+
+                saveBtn.style.display = "none";
+                addBtn.style.display = "block";
             });
         }
 
