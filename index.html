@@ -2,15 +2,20 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Карта ДПС</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; }
-        #map { width: 100vw; height: 100vh; }
-        .btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #0088cc; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        .btn { 
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            padding: 12px 24px; background: #0088cc; color: #fff; border: none;
+            border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -21,7 +26,7 @@
         let map, userMarker, placeMarker;
 
         function initMap() {
-            map = L.map('map').setView([55.751244, 37.618423], 13);
+            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
@@ -30,8 +35,10 @@
             map.locate({ setView: true, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
-                userMarker = L.marker(e.latlng, { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png', iconSize: [25, 41] }) }).addTo(map)
-                    .bindPopup("Вы здесь");
+                userMarker = L.marker(e.latlng, { icon: L.icon({ 
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+                    iconSize: [25, 41] 
+                })}).addTo(map).bindPopup("Вы здесь");
 
                 placeMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
@@ -42,7 +49,7 @@
                 let data = { latitude: pos.lat, longitude: pos.lng };
 
                 Telegram.WebApp.sendData(JSON.stringify(data));  
-                Telegram.WebApp.close();
+                alert("Метка сохранена!"); // Оставляем приложение открытым
             });
         }
 
