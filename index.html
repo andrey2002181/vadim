@@ -1,243 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Doodle Jump Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта ДПС</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            touch-action: none;
-            background: #87CEEB;
-        }
-        canvas {
-            display: block;
-            position: absolute;
-            width: 100vw;
-            height: 100vh;
-        }
-        .restart-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            font-size: 20px;
-            background-color: red;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            display: none;
-        }
+        body, html { margin: 0; padding: 0; height: 100%; }
+        #map { width: 100vw; height: 100vh; }
+        .btn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 24px; background: #0088cc; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <button class="restart-btn" id="restartButton">Restart</button>
+    <div id="map"></div>
+    <button id="save-btn" class="btn">Сохранить метку</button>
 
     <script>
-        window.onload = () => {
-            console.log("Игра загружается...");
+        let map, userMarker, placeMarker;
 
-            const canvas = document.getElementById("gameCanvas");
-            const ctx = canvas.getContext("2d");
-            const restartButton = document.getElementById("restartButton");
+        function initMap() {
+            map = L.map('map').setView([55.751244, 37.618423], 13);
 
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
 
-            const GRAVITY = 0.4;
-            const JUMP_STRENGTH = -10;
-            const PLATFORM_COUNT = 6;
-            const PLAYER_SPEED = canvas.width * 0.02;
+            map.locate({ setView: true, maxZoom: 16 });
 
-            const background = new Image();
-            const playerImageLeft = new Image();
-            const playerImageRight = new Image();
-            const platformImage = new Image();
-            const springPlatformImage = new Image();
+            map.on('locationfound', (e) => {
+                userMarker = L.marker(e.latlng, { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png', iconSize: [25, 41] }) }).addTo(map)
+                    .bindPopup("Вы здесь");
 
-            // Замените фон на формат .jpg
-            background.src = "background.jpg"; 
-            playerImageLeft.src = "player_left.png";
-            playerImageRight.src = "player_right.png";
-            platformImage.src = "platform.png";
-            springPlatformImage.src = "spring_platform.png";
-
-            let imagesLoaded = 0;
-            const totalImages = 5;
-
-            function checkImagesLoaded() {
-                imagesLoaded++;
-                if (imagesLoaded === totalImages) {
-                    console.log("Все изображения загружены.");
-                    resetGame();
-                }
-            }
-
-            background.onload = checkImagesLoaded;
-            playerImageLeft.onload = checkImagesLoaded;
-            playerImageRight.onload = checkImagesLoaded;
-            platformImage.onload = checkImagesLoaded;
-            springPlatformImage.onload = checkImagesLoaded;
-
-            class Player {
-                constructor() {
-                    this.x = canvas.width / 2;
-                    this.y = canvas.height - 80;
-                    this.width = canvas.width * 0.15;
-                    this.height = this.width;
-                    this.velocity_y = JUMP_STRENGTH;
-                    this.image = playerImageLeft;
-                    this.direction = "left";
-                }
-
-                move(platforms) {
-                    this.velocity_y += GRAVITY;
-                    this.y += this.velocity_y;
-
-                    if (this.y > canvas.height) {
-                        return false;
-                    }
-
-                    for (const platform of platforms) {
-                        if (
-                            this.x + this.width > platform.x &&
-                            this.x < platform.x + platform.width &&
-                            this.y + this.height > platform.y &&
-                            this.y + this.height < platform.y + 10 &&
-                            this.velocity_y > 0
-                        ) {
-                            this.velocity_y = platform.jump_strength;
-                            this.y = platform.y - this.height;
-                        }
-                    }
-                    return true;
-                }
-
-                draw() {
-                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-                }
-
-                updateDirection(direction) {
-                    this.image = direction === "left" ? playerImageLeft : playerImageRight;
-                }
-            }
-
-            class Platform {
-                constructor(x, y, type = "normal") {
-                    this.x = x;
-                    this.y = y;
-                    this.width = canvas.width * 0.2;
-                    this.height = 10;
-                    this.type = type;
-                    this.jump_strength = type === "spring" ? -15 : JUMP_STRENGTH;
-                    this.image = type === "spring" ? springPlatformImage : platformImage;
-                }
-
-                draw() {
-                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-                }
-            }
-
-            let player;
-            let platforms;
-            let isGameOver = false;
-            let touchStartX = null;
-
-            function resetGame() {
-                console.log("Перезапуск игры...");
-                player = new Player();
-                platforms = [];
-                for (let i = 0; i < PLATFORM_COUNT; i++) {
-                    platforms.push(
-                        new Platform(
-                            Math.random() * (canvas.width - canvas.width * 0.2),
-                            canvas.height - (i + 1) * (canvas.height / PLATFORM_COUNT),
-                            Math.random() < 0.2 ? "spring" : "normal"
-                        )
-                    );
-                }
-                isGameOver = false;
-                restartButton.style.display = "none";
-                gameLoop();
-            }
-
-            function gameOverScreen() {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = "white";
-                ctx.font = "48px Arial";
-                ctx.fillText("Game Over", canvas.width / 3, canvas.height / 3);
-                restartButton.style.display = "block";
-            }
-
-            function gameLoop() {
-                if (isGameOver) {
-                    gameOverScreen();
-                    return;
-                }
-
-                ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-                if (!player.move(platforms)) {
-                    isGameOver = true;
-                }
-
-                player.draw();
-
-                for (const platform of platforms) {
-                    platform.draw();
-                    if (player.y < canvas.height / 2) {
-                        player.y = canvas.height / 2;
-                        for (const platform of platforms) {
-                            platform.y += Math.abs(player.velocity_y);
-                            if (platform.y > canvas.height) {
-                                platform.y = 0;
-                                platform.x = Math.random() * (canvas.width - platform.width);
-                            }
-                        }
-                    }
-                }
-
-                requestAnimationFrame(gameLoop);
-            }
-
-            window.addEventListener("resize", () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                resetGame();
+                placeMarker = L.marker(e.latlng, { draggable: true }).addTo(map)
+                    .bindPopup("Переместите и сохраните").openPopup();
             });
 
-            canvas.addEventListener("touchstart", (e) => {
-                touchStartX = e.touches[0].clientX;
+            document.getElementById("save-btn").addEventListener("click", () => {
+                let pos = placeMarker.getLatLng();
+                let data = { latitude: pos.lat, longitude: pos.lng };
+
+                Telegram.WebApp.sendData(JSON.stringify(data));  
+                Telegram.WebApp.close();
             });
+        }
 
-            canvas.addEventListener("touchmove", (e) => {
-                if (touchStartX === null) return;
-
-                const touchEndX = e.touches[0].clientX;
-                const diffX = touchEndX - touchStartX;
-
-                if (diffX > 0) {
-                    player.updateDirection("right");
-                    player.x += PLAYER_SPEED;
-                } else if (diffX < 0) {
-                    player.updateDirection("left");
-                    player.x -= PLAYER_SPEED;
-                }
-
-                touchStartX = touchEndX;
-            });
-
-            canvas.addEventListener("touchend", () => {
-                touchStartX = null;
-            });
-
-            restartButton.addEventListener("click", resetGame);
-        };
+        document.addEventListener("DOMContentLoaded", initMap);
     </script>
 </body>
 </html>
