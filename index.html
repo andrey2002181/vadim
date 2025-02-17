@@ -2,70 +2,131 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Карта ДПС</title>
+    
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Leaflet (карта) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        .btn { 
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            padding: 12px 24px; background: #0088cc; color: #fff; border: none;
-            border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .buttons {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: rgba(0, 0, 0, 0.9);
         }
     </style>
 </head>
 <body>
+
     <div id="map"></div>
-    <button id="add-btn" class="btn">Добавить метку</button>
-    <button id="save-btn" class="btn" style="display: none;">Сохранить метку</button>
+
+    <div class="buttons">
+        <button id="addMarkerBtn" class="btn">Добавить метку</button>
+        <button id="saveMarkerBtn" class="btn" style="display: none;">Сохранить метку</button>
+    </div>
 
     <script>
-        let map, userMarker, placeMarker;
-        const addBtn = document.getElementById("add-btn");
-        const saveBtn = document.getElementById("save-btn");
+        Telegram.WebApp.expand(); // Разворачиваем WebApp на весь экран
 
-        function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
+        let map = L.map('map').setView([55.751244, 37.618423], 12); // Москва по умолчанию
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+        // Подключаем OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-            map.locate({ setView: true, maxZoom: 16 });
+        let userMarker;
+        let tempMarker;
+        const addMarkerBtn = document.getElementById("addMarkerBtn");
+        const saveMarkerBtn = document.getElementById("saveMarkerBtn");
 
-            map.on('locationfound', (e) => {
-                userMarker = L.marker(e.latlng, { icon: L.icon({ 
-                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-                    iconSize: [25, 41] 
-                })}).addTo(map).bindPopup("Вы здесь");
-            });
+        // Запросить геолокацию пользователя
+        navigator.geolocation.getCurrentPosition(position => {
+            const { latitude, longitude } = position.coords;
+            userMarker = L.marker([latitude, longitude], { draggable: false })
+                .addTo(map)
+                .bindPopup("Вы здесь!")
+                .openPopup();
+            map.setView([latitude, longitude], 14);
+        });
 
-            addBtn.addEventListener("click", () => {
-                let center = map.getCenter();
-                placeMarker = L.marker(center, { draggable: true }).addTo(map)
-                    .bindPopup("Переместите и сохраните").openPopup();
-
-                addBtn.style.display = "none";
-                saveBtn.style.display = "block";
-            });
-
-            saveBtn.addEventListener("click", () => {
-                let pos = placeMarker.getLatLng();
-                let data = { latitude: pos.lat, longitude: pos.lng };
-
-                Telegram.WebApp.sendData(JSON.stringify(data));  
-                alert("Метка сохранена!");
-
-                saveBtn.style.display = "none";
-                addBtn.style.display = "block";
-            });
+        // Функция для загрузки меток с сервера
+        function loadMarkers() {
+            fetch("https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev//get_markers")
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(marker => {
+                        L.marker([marker.lat, marker.lng]).addTo(map);
+                    });
+                })
+                .catch(error => console.error("Ошибка загрузки меток:", error));
         }
 
-        document.addEventListener("DOMContentLoaded", initMap);
+        // Добавить новую метку
+        addMarkerBtn.addEventListener("click", () => {
+            if (tempMarker) map.removeLayer(tempMarker);
+            const center = map.getCenter();
+            tempMarker = L.marker([center.lat, center.lng], { draggable: true }).addTo(map);
+            addMarkerBtn.style.display = "none";
+            saveMarkerBtn.style.display = "block";
+        });
+
+        // Сохранить метку на сервер
+        saveMarkerBtn.addEventListener("click", () => {
+            if (!tempMarker) return;
+            const { lat, lng } = tempMarker.getLatLng();
+            
+            fetch("https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev//add_marker", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ lat, lng })
+            })
+            .then(() => {
+                loadMarkers();
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+                addMarkerBtn.style.display = "block";
+                saveMarkerBtn.style.display = "none";
+            })
+            .catch(error => console.error("Ошибка сохранения метки:", error));
+        });
+
+        // Загружаем метки при старте
+        loadMarkers();
+
+        // Автообновление меток раз в 10 секунд
+        setInterval(loadMarkers, 10000);
     </script>
+
 </body>
 </html>
