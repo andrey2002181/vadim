@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карта ДПС</title>
-    
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <!-- Leaflet (карта) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <title>Карта автолюбителей</title>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        html, body {
+        * {
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
             overflow: hidden;
         }
+
         #map {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
         }
+
         .buttons {
             position: absolute;
             bottom: 20px;
@@ -31,18 +30,23 @@
             transform: translateX(-50%);
             display: flex;
             gap: 10px;
+            z-index: 1000;
         }
+
         .btn {
-            padding: 10px 20px;
+            padding: 12px 18px;
             font-size: 16px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
         }
+
         .btn:hover {
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 1);
         }
     </style>
 </head>
@@ -56,76 +60,74 @@
     </div>
 
     <script>
-        Telegram.WebApp.expand(); // Разворачиваем WebApp на весь экран
+        const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev"; // Твой сервер
+        let map = L.map('map').setView([55.751244, 37.618423], 12); // Центр Москва
 
-        let map = L.map('map').setView([55.751244, 37.618423], 12); // Москва по умолчанию
-
-        // Подключаем OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         let userMarker;
-        let tempMarker;
-        const addMarkerBtn = document.getElementById("addMarkerBtn");
-        const saveMarkerBtn = document.getElementById("saveMarkerBtn");
+        let tempMarker = null; // Временная метка перед сохранением
 
-        // Запросить геолокацию пользователя
-        navigator.geolocation.getCurrentPosition(position => {
-            const { latitude, longitude } = position.coords;
-            userMarker = L.marker([latitude, longitude], { draggable: false })
-                .addTo(map)
-                .bindPopup("Вы здесь!")
-                .openPopup();
-            map.setView([latitude, longitude], 14);
-        });
-
-        // Функция для загрузки меток с сервера
-        function loadMarkers() {
-            fetch("https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev//get_markers")
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(marker => {
-                        L.marker([marker.lat, marker.lng]).addTo(map);
-                    });
-                })
-                .catch(error => console.error("Ошибка загрузки меток:", error));
+        // Получаем местоположение пользователя
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                let { latitude, longitude } = position.coords;
+                userMarker = L.marker([latitude, longitude]).addTo(map).bindPopup("Вы здесь!");
+                map.setView([latitude, longitude], 13);
+            });
         }
 
-        // Добавить новую метку
-        addMarkerBtn.addEventListener("click", () => {
-            if (tempMarker) map.removeLayer(tempMarker);
-            const center = map.getCenter();
-            tempMarker = L.marker([center.lat, center.lng], { draggable: true }).addTo(map);
-            addMarkerBtn.style.display = "none";
-            saveMarkerBtn.style.display = "block";
-        });
-
-        // Сохранить метку на сервер
-        saveMarkerBtn.addEventListener("click", () => {
-            if (!tempMarker) return;
-            const { lat, lng } = tempMarker.getLatLng();
-            
-            fetch("https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev//add_marker", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ lat, lng })
-            })
-            .then(() => {
-                loadMarkers();
+        // Функция для добавления временной метки
+        document.getElementById("addMarkerBtn").addEventListener("click", () => {
+            if (tempMarker) {
                 map.removeLayer(tempMarker);
-                tempMarker = null;
-                addMarkerBtn.style.display = "block";
-                saveMarkerBtn.style.display = "none";
-            })
-            .catch(error => console.error("Ошибка сохранения метки:", error));
+            }
+
+            tempMarker = L.marker(map.getCenter(), { draggable: true }).addTo(map);
+            document.getElementById("addMarkerBtn").style.display = "none";
+            document.getElementById("saveMarkerBtn").style.display = "block";
         });
 
-        // Загружаем метки при старте
-        loadMarkers();
+        // Функция для сохранения метки
+        document.getElementById("saveMarkerBtn").addEventListener("click", async () => {
+            if (tempMarker) {
+                let { lat, lng } = tempMarker.getLatLng();
+                await fetch(`${serverUrl}/add_marker`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lat, lng })
+                });
 
-        // Автообновление меток раз в 10 секунд
-        setInterval(loadMarkers, 10000);
+                tempMarker = null;
+                document.getElementById("addMarkerBtn").style.display = "block";
+                document.getElementById("saveMarkerBtn").style.display = "none";
+                loadMarkers(); // Перезагружаем метки
+            }
+        });
+
+        // Функция для загрузки всех меток с сервера
+        async function loadMarkers() {
+            let response = await fetch(`${serverUrl}/get_markers`);
+            let markers = await response.json();
+
+            // Удаляем старые метки перед обновлением
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker && layer !== userMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Добавляем новые метки
+            markers.forEach(({ lat, lng }) => {
+                L.marker([lat, lng]).addTo(map);
+            });
+        }
+
+        // Загружаем метки при загрузке страницы
+        loadMarkers();
+        setInterval(loadMarkers, 60000); // Обновление раз в минуту
     </script>
 
 </body>
