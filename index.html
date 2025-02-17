@@ -58,18 +58,28 @@
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
+                console.log(`Saving marker at: ${pos.lat}, ${pos.lng}`); // Добавим консольный вывод
 
-                await fetch(`${serverUrl}/add_marker`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
-                });
+                try {
+                    const response = await fetch(`${serverUrl}/add_marker`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
+                    });
 
-                alert("Метка сохранена!");
-                saveBtn.style.display = "none";
-                addBtn.style.display = "block";
+                    const data = await response.json();
+                    if (data.status === "success") {
+                        alert("Метка сохранена!");
+                        saveBtn.style.display = "none";
+                        addBtn.style.display = "block";
 
-                loadMarkers(); 
+                        loadMarkers(); // Загружаем метки после сохранения
+                    } else {
+                        alert("Ошибка при сохранении метки");
+                    }
+                } catch (error) {
+                    console.error("Ошибка при отправке данных на сервер:", error);
+                }
             });
 
             loadMarkers();
