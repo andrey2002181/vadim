@@ -71,15 +71,15 @@
             map.locate({ setView: true, maxZoom: 16 });
 
             // Используем локальные изображения для меток
-            const userIcon = L.icon({
-                iconUrl: 'user-marker.png', // Локальный файл изображения для метки местоположения
+            const pinIcon = L.icon({
+                iconUrl: 'pin.png', // Локальный файл изображения для метки перед сохранением
                 iconSize: [32, 32], 
                 iconAnchor: [16, 32], 
                 popupAnchor: [0, -32]
             });
 
-            const placeIcon = L.icon({
-                iconUrl: 'place-marker.png', // Локальный файл изображения для метки пользователя
+            const userIcon = L.icon({
+                iconUrl: 'user-marker.png', // Локальный файл изображения для метки после сохранения
                 iconSize: [32, 32], 
                 iconAnchor: [16, 32], 
                 popupAnchor: [0, -32]
@@ -97,7 +97,7 @@
                 if (placeMarker) map.removeLayer(placeMarker);
 
                 let center = map.getCenter();
-                placeMarker = L.marker(center, { icon: placeIcon }).addTo(map)
+                placeMarker = L.marker(center, { icon: pinIcon }).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
 
                 addBtn.style.display = "none";
@@ -120,6 +120,9 @@
                     });
 
                     alert("Метка сохранена!");
+                    // Меняем изображение метки на сохраненное
+                    placeMarker.setIcon(userIcon);
+
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
                     closeBtn.style.display = "none"; // Прячем крестик
@@ -165,7 +168,7 @@
                 });
 
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: placeIcon }).addTo(map);
+                    L.marker([lat, lng], { icon: userIcon }).addTo(map); // После сохранения показываем метку с userIcon
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
