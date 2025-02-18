@@ -58,14 +58,14 @@
 
         // Иконки для меток
         const pinIcon = L.icon({
-            iconUrl: 'place-marker.png', // Иконка для сохраненной метки
+            iconUrl: 'pin.png', // Иконка для добавляемой метки
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
-        const userIcon = L.icon({
-            iconUrl: 'user-marker.png', // Иконка для текущего местоположения
+        const placeIcon = L.icon({
+            iconUrl: 'place-marker.png', // Иконка для сохранённой метки
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
@@ -89,7 +89,7 @@
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: pinIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng);
                 }
@@ -121,7 +121,7 @@
                     });
 
                     alert("Метка сохранена!");
-                    placeMarker.setIcon(userIcon); // Заменяем иконку на userIcon после сохранения
+                    placeMarker.setIcon(placeIcon); // Заменяем иконку на placeIcon после сохранения
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
@@ -167,7 +167,7 @@
                 });
 
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: pinIcon }).addTo(map); // Используем pinIcon для сохранённых меток
+                    L.marker([lat, lng], { icon: placeIcon }).addTo(map); // Используем placeIcon для сохранённых меток
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
