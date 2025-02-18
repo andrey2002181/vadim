@@ -121,10 +121,11 @@
                 let pos = placeMarker.getLatLng();
 
                 try {
+                    const currentTime = new Date().getTime(); // Сохраняем время в миллисекундах
                     await fetch(`${serverUrl}/add_marker`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
+                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng, timestamp: currentTime })
                     });
 
                     alert("Метка сохранена!");
@@ -185,12 +186,26 @@
                     }
                 });
 
-                markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: placeIcon }).addTo(map); // Используем placeIcon для сохранённых меток
+                markers.forEach(({ lat, lng, timestamp }) => {
+                    const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
+
+                    marker.on('click', () => {
+                        const currentTime = new Date().getTime();
+                        const elapsedTime = Math.floor((currentTime - timestamp) / 1000); // Время в секундах
+                        const elapsedTimeFormatted = formatTime(elapsedTime);
+                        marker.bindPopup(`<b>Метка существует:</b><br>${elapsedTimeFormatted}`).openPopup();
+                    });
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
             }
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours} ч ${minutes} мин ${secs} сек`;
         }
 
         document.addEventListener("DOMContentLoaded", initMap);
