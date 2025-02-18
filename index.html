@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; }
         #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
+
         .btn {
             position: fixed; left: 50%; transform: translateX(-50%);
             padding: 12px 24px; background: #0088cc; color: #fff; border: none;
@@ -19,12 +19,9 @@
             user-select: none; /* Предотвращаем выделение текста */
         }
 
-        #add-btn { bottom: 80px; } 
+        #add-btn { bottom: 80px; }
         #save-btn { bottom: 20px; display: none; }
-        #locate-btn {
-            bottom: 140px; 
-            background: #ff6600; 
-        }
+        #locate-btn { bottom: 140px; background: #ff6600; }
     </style>
 </head>
 <body>
@@ -66,7 +63,7 @@
                 let center = map.getCenter();
                 placeMarker = L.marker(center, { 
                     icon: L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png', // Здесь используем иконку
                         iconSize: [25, 41] 
                     })
                 }).addTo(map)
@@ -141,6 +138,13 @@
                 console.error("Ошибка загрузки меток:", error);
             }
         }
+
+        // Чтобы при зажатии кнопки текст не выделялся
+        document.addEventListener("mousedown", (event) => {
+            if (event.target.classList.contains('btn')) {
+                event.preventDefault(); // Предотвращаем выделение текста
+            }
+        });
 
         document.addEventListener("DOMContentLoaded", initMap);
     </script>
