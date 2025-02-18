@@ -58,14 +58,14 @@
 
         // Иконки для меток
         const pinIcon = L.icon({
-            iconUrl: 'pin.png', // Замените на путь к вашему файлу
+            iconUrl: 'place-marker.png', // Иконка для сохраненной метки
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         const userIcon = L.icon({
-            iconUrl: 'user-marker.png', // Замените на путь к вашему файлу
+            iconUrl: 'user-marker.png', // Иконка для текущего местоположения
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
@@ -121,7 +121,7 @@
                     });
 
                     alert("Метка сохранена!");
-                    placeMarker.setIcon(userIcon);
+                    placeMarker.setIcon(userIcon); // Заменяем иконку на userIcon после сохранения
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
@@ -167,7 +167,7 @@
                 });
 
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: userIcon }).addTo(map);
+                    L.marker([lat, lng], { icon: pinIcon }).addTo(map); // Используем pinIcon для сохранённых меток
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
