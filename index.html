@@ -11,7 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; }
         #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        .btn { 
+        .btn {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             padding: 12px 24px; background: #0088cc; color: #fff; border: none;
             border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
@@ -24,7 +24,7 @@
     <button id="save-btn" class="btn" style="display: none;">Сохранить метку</button>
 
     <script>
-        const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev/";  // Замените на ваш URL сервера
+        const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev/"; // УКАЖИ ССЫЛКУ НА СВОЙ СЕРВЕР!
         let map, userMarker, placeMarker;
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
@@ -39,10 +39,10 @@
             map.locate({ setView: true, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
-                userMarker = L.marker(e.latlng, { icon: L.icon({ 
+                userMarker = L.marker(e.latlng, { icon: L.icon({
                     iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-                    iconSize: [25, 41] 
-                })}).addTo(map).bindPopup("Вы здесь");
+                    iconSize: [25, 41]
+                })}).addTo(map).bindPopup("Вы здеся");
             });
 
             addBtn.addEventListener("click", () => {
@@ -58,47 +58,57 @@
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
-                console.log(`Saving marker at: ${pos.lat}, ${pos.lng}`); // Добавим консольный вывод
+                console.log("Отправка запроса на сервер...", pos);
 
                 try {
-                    const response = await fetch(`${serverUrl}/add_marker`, {
+                    let response = await fetch(`${serverUrl}/add_marker`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
                     });
 
-                    const data = await response.json();
-                    if (data.status === "success") {
-                        alert("Метка сохранена!");
-                        saveBtn.style.display = "none";
-                        addBtn.style.display = "block";
-
-                        loadMarkers(); // Загружаем метки после сохранения
-                    } else {
-                        alert("Ошибка при сохранении метки");
+                    if (!response.ok) {
+                        throw new Error(`Ошибка сервера: ${response.status}`);
                     }
+
+                    let result = await response.json();
+                    console.log("Ответ сервера:", result);
+
+                    alert("Метка сохранена!");
+                    saveBtn.style.display = "none";
+                    addBtn.style.display = "block";
+
+                    loadMarkers();
                 } catch (error) {
                     console.error("Ошибка при отправке данных на сервер:", error);
+                    alert("Ошибка сохранения метки!");
                 }
             });
 
             loadMarkers();
-            setInterval(loadMarkers, 60000);  // Обновление меток каждую минуту
+            setInterval(loadMarkers, 60000);
         }
 
         async function loadMarkers() {
-            let response = await fetch(`${serverUrl}/get_markers`);
-            let markers = await response.json();
+            try {
+                let response = await fetch(`${serverUrl}/get_markers`);
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
 
-            map.eachLayer(layer => {
-                if (layer instanceof L.Marker && layer !== userMarker) {
-                    map.removeLayer(layer);
-                }
-            });
+                let markers = await response.json();
+                console.log("Полученные метки:", markers);
 
-            markers.forEach(({ lat, lng }) => {
-                L.marker([lat, lng]).addTo(map);
-            });
+                map.eachLayer(layer => {
+                    if (layer instanceof L.Marker && layer !== userMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                markers.forEach(({ lat, lng }) => {
+                    L.marker([lat, lng]).addTo(map);
+                });
+            } catch (error) {
+                console.error("Ошибка загрузки меток:", error);
+            }
         }
 
         document.addEventListener("DOMContentLoaded", initMap);
