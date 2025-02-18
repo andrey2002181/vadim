@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Карта ДПС</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карта с метками</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -11,8 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body {
             width: 100%; height: 100%;
-            overflow: hidden; /* Отключаем прокрутку */
-            touch-action: none; /* Отключаем все взаимодействия с жестами */
+            overflow: hidden;
         }
         #map {
             width: 100vw;
@@ -21,7 +20,6 @@
             top: 0;
             left: 0;
             z-index: 1;
-            touch-action: none; /* Отключаем жесты на карте */
         }
         .btn { 
             position: fixed; 
@@ -51,6 +49,7 @@
             cursor: pointer;
             display: none; /* Показывается только в режиме добавления метки */
         }
+        .leaflet-touch { touch-action: none; }
     </style>
 </head>
 <body>
@@ -67,7 +66,7 @@
         const closeBtn = document.getElementById("close-btn");
 
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
+            map = L.map('map', { zoomControl: true }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
