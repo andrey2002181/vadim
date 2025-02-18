@@ -113,6 +113,7 @@
                 let pos = placeMarker.getLatLng();
 
                 try {
+                    // Отправляем метку на сервер
                     await fetch(`${serverUrl}/add_marker`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -125,7 +126,7 @@
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
-                    closeBtn.style.display = "none"; // Прячем крестик
+                    closeBtn.style.display = "none"; // Скрываем крестик
 
                     loadMarkers();
                 } catch (error) {
@@ -167,8 +168,9 @@
                     }
                 });
 
+                // Загружаем и отображаем все метки
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: userIcon }).addTo(map); // После сохранения показываем метку с userIcon
+                    L.marker([lat, lng], { icon: userIcon }).addTo(map); // Отображаем метки с userIcon
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
