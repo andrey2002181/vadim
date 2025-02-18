@@ -9,60 +9,65 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-
-        .btn {
-            position: fixed; left: 50%; transform: translateX(-50%);
-            padding: 12px 24px; background: #0088cc; color: #fff; border: none;
-            border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
-            user-select: none; /* Предотвращаем выделение текста */
-            -webkit-user-select: none; /* Для старых браузеров */
-            -moz-user-select: none;
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden; /* Отключаем прокрутку */
+            touch-action: none; /* Отключаем все взаимодействия с жестами */
         }
-
-        #add-btn { bottom: 80px; }
-        #save-btn { bottom: 20px; display: none; }
-        #locate-btn { bottom: 140px; background: #ff6600; }
-
-        .close-btn {
-            position: absolute; top: 100px; right: 20px;
-            background: red; color: white; border-radius: 50%;
-            width: 40px; height: 40px; text-align: center; font-size: 20px;
-            cursor: pointer; display: none; z-index: 1000;
+        #map {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            touch-action: none; /* Отключаем жесты на карте */
         }
-
-        /* Убираем выделение текста при сенсорном нажатии */
-        body, html {
-            -webkit-touch-callout: none; /* Отключение выделения текста при удержании */
-            -webkit-user-select: none; /* Отключаем выделение текста */
-            -moz-user-select: none; /* Для Firefox */
+        .btn { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            padding: 12px 24px; 
+            background: #0088cc; 
+            color: #fff; 
+            border: none;
+            border-radius: 8px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            z-index: 1000;
+        }
+        #close-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            display: none; /* Показывается только в режиме добавления метки */
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <button id="add-btn" class="btn">Добавить метку</button>
-    <button id="save-btn" class="btn">Сохранить метку</button>
-    <button id="locate-btn" class="btn">Моё местоположение</button>
-    <button id="close-btn" class="close-btn">×</button>
+    <button id="save-btn" class="btn" style="display: none;">Сохранить метку</button>
+    <button id="close-btn" onclick="cancelMarker()">×</button> <!-- Кнопка закрытия режима добавления метки -->
 
     <script>
-        const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev";
+        const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev/";
         let map, userMarker, placeMarker;
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
-        const locateBtn = document.getElementById("locate-btn");
         const closeBtn = document.getElementById("close-btn");
 
         function initMap() {
-            map = L.map('map', { 
-                zoomControl: false, 
-                touchZoom: true,    // Включаем жесты зума
-                scrollWheelZoom: true, // Включаем зум колесом мыши
-                dragging: true,     // Разрешаем перетаскивание карты
-                tap: true           // Разрешаем сенсорные события
-            }).setView([55.751244, 37.618423], 13);
+            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
@@ -71,119 +76,68 @@
             map.locate({ setView: true, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
-                if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: L.icon({ 
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-                        iconSize: [25, 41] 
-                    })}).addTo(map).bindPopup("Вы здесь");
-                } else {
-                    userMarker.setLatLng(e.latlng);
-                }
+                userMarker = L.marker(e.latlng, { icon: L.icon({ 
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+                    iconSize: [25, 41] 
+                })}).addTo(map).bindPopup("Вы здеся");
             });
 
             addBtn.addEventListener("click", () => {
                 if (placeMarker) map.removeLayer(placeMarker);
 
                 let center = map.getCenter();
-                placeMarker = L.marker(center, { 
-                    icon: L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png', // Здесь используем иконку
-                        iconSize: [25, 41] 
-                    })
-                }).addTo(map)
+                placeMarker = L.marker(center).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
 
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
-                closeBtn.style.display = "block"; // Показываем кнопку крестика
-
-                // Центрируем карту на метке и фиксируем её в центре
-                map.setView(center, map.getZoom());
-                updateMarkerPosition(center);
+                closeBtn.style.display = "block"; // Показываем крестик
             });
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
 
-                try {
-                    await fetch(`${serverUrl}/add_marker`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
-                    });
+                await fetch(`${serverUrl}/add_marker`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
+                });
 
-                    alert("Метка сохранена!");
-                    saveBtn.style.display = "none";
-                    addBtn.style.display = "block";
-                    closeBtn.style.display = "none"; // Прячем крестик
+                alert("Метка сохранена!");
+                saveBtn.style.display = "none";
+                addBtn.style.display = "block";
+                closeBtn.style.display = "none"; // Скрываем крестик
 
-                    loadMarkers();
-                } catch (error) {
-                    console.error("Ошибка при отправке данных на сервер:", error);
-                    alert("Ошибка сохранения метки!");
-                }
+                loadMarkers(); 
             });
 
-            locateBtn.addEventListener("click", () => {
-                map.locate({ setView: true, maxZoom: 16 });
-            });
-
-            // Обновление положения метки в центре карты
-            map.on('move', () => {
-                if (placeMarker) {
-                    let center = map.getCenter();
-                    updateMarkerPosition(center);
-                }
-            });
+            closeBtn.addEventListener("click", cancelMarker);
 
             loadMarkers();
             setInterval(loadMarkers, 60000);
         }
 
-        function updateMarkerPosition(center) {
-            if (placeMarker) {
-                placeMarker.setLatLng(center); // Центрируем метку на текущей позиции карты
-            }
-        }
-
         async function loadMarkers() {
-            try {
-                let response = await fetch(`${serverUrl}/get_markers`);
-                let markers = await response.json();
+            let response = await fetch(`${serverUrl}/get_markers`);
+            let markers = await response.json();
 
-                map.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer !== userMarker) {
-                        map.removeLayer(layer);
-                    }
-                });
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker && layer !== userMarker) {
+                    map.removeLayer(layer);
+                }
+            });
 
-                markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng]).addTo(map);
-                });
-            } catch (error) {
-                console.error("Ошибка загрузки меток:", error);
-            }
+            markers.forEach(({ lat, lng }) => {
+                L.marker([lat, lng]).addTo(map);
+            });
         }
 
-        // Чтобы при зажатии кнопки текст не выделялся
-        document.addEventListener("mousedown", (event) => {
-            if (event.target.classList.contains('btn')) {
-                event.preventDefault(); // Предотвращаем выделение текста
-            }
-        });
-
-        // Скрыть крестик, если на него нажать
-        closeBtn.addEventListener("click", () => {
-            if (placeMarker) {
-                map.removeLayer(placeMarker);
-            }
-
+        function cancelMarker() {
+            map.removeLayer(placeMarker);
             addBtn.style.display = "block";
             saveBtn.style.display = "none";
             closeBtn.style.display = "none"; // Скрываем крестик
-
-            placeMarker = null;
-        });
+        }
 
         document.addEventListener("DOMContentLoaded", initMap);
     </script>
