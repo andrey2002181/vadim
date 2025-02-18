@@ -192,8 +192,11 @@
                     marker.on('click', () => {
                         const currentTime = new Date().getTime();
                         const elapsedTime = Math.floor((currentTime - timestamp) / 1000); // Время в секундах
-                        const elapsedTimeFormatted = formatTime(elapsedTime);
-                        marker.bindPopup(`<b>Метка существует:</b><br>${elapsedTimeFormatted}`).openPopup();
+
+                        if (elapsedTime >= 0) {
+                            const elapsedTimeFormatted = formatTime(elapsedTime);
+                            marker.bindPopup(`<b>Метка существует:</b><br>${elapsedTimeFormatted}`).openPopup();
+                        }
                     });
                 });
             } catch (error) {
