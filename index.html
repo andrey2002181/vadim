@@ -71,6 +71,13 @@
             popupAnchor: [0, -32]
         });
 
+        const userIcon = L.icon({
+            iconUrl: 'user-marker.png', // Иконка для местоположения пользователя
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
         function initMap() {
             // Инициализация карты
             map = L.map('map', { 
@@ -89,7 +96,7 @@
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: pinIcon }).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng);
                 }
