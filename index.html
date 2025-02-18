@@ -25,6 +25,13 @@
         #save-btn { bottom: 20px; display: none; }
         #locate-btn { bottom: 140px; background: #ff6600; }
 
+        .close-btn {
+            position: absolute; top: 20px; right: 20px;
+            background: red; color: white; border-radius: 50%;
+            width: 40px; height: 40px; text-align: center; font-size: 20px;
+            cursor: pointer; display: none; z-index: 1000;
+        }
+
         /* Убираем выделение текста при сенсорном нажатии */
         body, html {
             -webkit-touch-callout: none; /* Отключение выделения текста при удержании */
@@ -38,6 +45,7 @@
     <button id="add-btn" class="btn">Добавить метку</button>
     <button id="save-btn" class="btn">Сохранить метку</button>
     <button id="locate-btn" class="btn">Моё местоположение</button>
+    <button id="close-btn" class="close-btn">×</button>
 
     <script>
         const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev";
@@ -45,6 +53,7 @@
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
         const locateBtn = document.getElementById("locate-btn");
+        const closeBtn = document.getElementById("close-btn");
 
         function initMap() {
             map = L.map('map', { 
@@ -86,6 +95,7 @@
 
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
+                closeBtn.style.display = "block"; // Показываем кнопку крестика
 
                 // Центрируем карту на метке и фиксируем её в центре
                 map.setView(center, map.getZoom());
@@ -105,6 +115,7 @@
                     alert("Метка сохранена!");
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
+                    closeBtn.style.display = "none"; // Прячем крестик
 
                     loadMarkers();
                 } catch (error) {
@@ -159,6 +170,19 @@
             if (event.target.classList.contains('btn')) {
                 event.preventDefault(); // Предотвращаем выделение текста
             }
+        });
+
+        // Скрыть крестик, если на него нажать
+        closeBtn.addEventListener("click", () => {
+            if (placeMarker) {
+                map.removeLayer(placeMarker);
+            }
+
+            addBtn.style.display = "block";
+            saveBtn.style.display = "none";
+            closeBtn.style.display = "none"; // Скрываем крестик
+
+            placeMarker = null;
         });
 
         document.addEventListener("DOMContentLoaded", initMap);
