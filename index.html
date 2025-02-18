@@ -39,6 +39,17 @@
             -webkit-user-select: none; 
             -moz-user-select: none; 
         }
+
+        .delete-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
     </style>
 </head>
 <body>
@@ -56,41 +67,36 @@
         const locateBtn = document.getElementById("locate-btn");
         const closeBtn = document.getElementById("close-btn");
 
-        // Иконки для меток
+        const telegramUserId = Telegram.WebApp.initDataUnsafe.user.id; // Получаем ID пользователя
+
         const pinIcon = L.icon({
-            iconUrl: 'pin.png', // Иконка для добавляемой метки
+            iconUrl: 'pin.png', 
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         const placeIcon = L.icon({
-            iconUrl: 'place-marker.png', // Иконка для сохранённой метки
+            iconUrl: 'place-marker.png', 
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         const userIcon = L.icon({
-            iconUrl: 'user-marker.png', // Иконка для местоположения пользователя
+            iconUrl: 'user-marker.png', 
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
-        let userId; // Для хранения ID пользователя
-
         function initMap() {
-            // Получаем ID пользователя из Telegram Web App
-            userId = Telegram.WebApp.initDataUnsafe.user.id;
-
-            // Инициализация карты
             map = L.map('map', { 
                 zoomControl: false, 
-                touchZoom: true,    // Включаем жесты зума
-                scrollWheelZoom: true, // Включаем зум колесом мыши
-                dragging: true,     // Разрешаем перетаскивание карты
-                tap: true           // Разрешаем сенсорные события
+                touchZoom: true, 
+                scrollWheelZoom: true, 
+                dragging: true,     
+                tap: true           
             }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -116,7 +122,7 @@
 
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
-                closeBtn.style.display = "block"; // Показываем кнопку крестика
+                closeBtn.style.display = "block"; 
 
                 map.setView(center, map.getZoom());
                 updateMarkerPosition(center);
@@ -124,26 +130,21 @@
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
-                const currentTime = new Date().getTime(); // Сохраняем время в миллисекундах
+                const currentTime = new Date().getTime();
 
                 try {
                     await fetch(`${serverUrl}/add_marker`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            lat: pos.lat,
-                            lng: pos.lng,
-                            timestamp: currentTime,
-                            userId: userId  // Отправляем ID пользователя
-                        })
+                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng, timestamp: currentTime, user_id: telegramUserId })
                     });
 
                     alert("Метка сохранена!");
-                    placeMarker.setIcon(placeIcon); // Заменяем иконку на placeIcon после сохранения
+                    placeMarker.setIcon(placeIcon);
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
-                    closeBtn.style.display = "none"; // Скрываем крестик
+                    closeBtn.style.display = "none";
 
                     loadMarkers();
                 } catch (error) {
@@ -156,15 +157,7 @@
                 map.locate({ setView: true, maxZoom: 16 });
             });
 
-            map.on('move', () => {
-                if (placeMarker) {
-                    let center = map.getCenter();
-                    updateMarkerPosition(center);
-                }
-            });
-
             closeBtn.addEventListener("click", () => {
-                // Удаляем маркер и восстанавливаем интерфейс
                 if (placeMarker) {
                     map.removeLayer(placeMarker);
                     placeMarker = null;
@@ -172,7 +165,7 @@
 
                 addBtn.style.display = "block";
                 saveBtn.style.display = "none";
-                closeBtn.style.display = "none"; // Скрываем крестик
+                closeBtn.style.display = "none";
             });
 
             loadMarkers();
@@ -190,29 +183,43 @@
                 let response = await fetch(`${serverUrl}/get_markers`);
                 let markers = await response.json();
 
+                console.log("Загруженные метки:", markers);
+
                 map.eachLayer(layer => {
                     if (layer instanceof L.Marker && layer !== userMarker) {
                         map.removeLayer(layer);
                     }
                 });
 
-                markers.forEach(({ lat, lng, timestamp, userId: markerUserId }) => {
+                markers.forEach(({ lat, lng, timestamp, user_id, marker_id }) => {
                     const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
 
-                    // Добавляем кнопку удаления только для своих меток
-                    if (markerUserId === userId) {
-                        marker.bindPopup(`
-                            <b>Метка существует:</b><br>${formatTime(Math.floor((new Date().getTime() - timestamp) / 1000))}
-                            <br><button onclick="deleteMarker(${lat}, ${lng})">Удалить метку</button>
-                        `);
-                    } else {
-                        marker.bindPopup(`
-                            <b>Метка существует:</b><br>${formatTime(Math.floor((new Date().getTime() - timestamp) / 1000))}
-                        `);
-                    }
-
                     marker.on('click', function() {
-                        marker.openPopup();
+                        const currentTime = new Date().getTime();
+                        const elapsedTime = Math.floor((currentTime - timestamp) / 1000);
+
+                        const elapsedTimeFormatted = formatTime(elapsedTime);
+                        let popupContent = `
+                            <b>Метка существует:</b><br>${elapsedTimeFormatted}
+                        `;
+
+                        if (user_id === telegramUserId) {
+                            popupContent += `
+                                <br><button class="delete-btn" data-marker-id="${marker_id}">Удалить метку</button>
+                            `;
+                        }
+
+                        marker.bindPopup(popupContent).openPopup();
+                    });
+
+                    map.on('popupopen', function(e) {
+                        const deleteBtn = e.popup.getElement().querySelector('.delete-btn');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', async function() {
+                                const markerId = this.getAttribute('data-marker-id');
+                                await deleteMarker(markerId, marker);
+                            });
+                        }
                     });
                 });
             } catch (error) {
@@ -220,19 +227,23 @@
             }
         }
 
-        async function deleteMarker(lat, lng) {
+        async function deleteMarker(markerId, marker) {
             try {
-                await fetch(`${serverUrl}/delete_marker`, {
+                const response = await fetch(`${serverUrl}/delete_marker`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ lat, lng, userId })
+                    body: JSON.stringify({ marker_id: markerId })
                 });
 
-                alert("Метка удалена!");
-                loadMarkers();
+                if (response.ok) {
+                    alert("Метка удалена!");
+                    map.removeLayer(marker);
+                } else {
+                    alert("Ошибка при удалении метки!");
+                }
             } catch (error) {
                 console.error("Ошибка удаления метки:", error);
-                alert("Ошибка при удалении метки!");
+                alert("Ошибка удаления метки!");
             }
         }
 
@@ -243,7 +254,7 @@
             return `${hours} ч ${minutes} мин ${secs} сек`;
         }
 
-        document.addEventListener("DOMContentLoaded", initMap);
+        initMap();
     </script>
 </body>
 </html>
