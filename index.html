@@ -16,6 +16,7 @@
             position: fixed; left: 50%; transform: translateX(-50%);
             padding: 12px 24px; background: #0088cc; color: #fff; border: none;
             border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
+            user-select: none; /* Предотвращаем выделение текста */
         }
 
         #add-btn { bottom: 80px; } 
@@ -68,6 +69,9 @@
 
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
+
+                // Сцентрировать карту на метке
+                map.setView(center, map.getZoom());
             });
 
             saveBtn.addEventListener("click", async () => {
