@@ -189,7 +189,8 @@
                 markers.forEach(({ lat, lng, timestamp }) => {
                     const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
 
-                    marker.on('click', () => {
+                    // Привязываем событие на клик для отображения времени
+                    marker.on('click', function() {
                         const currentTime = new Date().getTime();
                         const elapsedTime = Math.floor((currentTime - timestamp) / 1000); // Время в секундах
 
