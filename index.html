@@ -47,7 +47,13 @@
         const locateBtn = document.getElementById("locate-btn");
 
         function initMap() {
-            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
+            map = L.map('map', { 
+                zoomControl: false, 
+                touchZoom: true,    // Включаем жесты зума
+                scrollWheelZoom: true, // Включаем зум колесом мыши
+                dragging: true,     // Разрешаем перетаскивание карты
+                tap: true           // Разрешаем сенсорные события
+            }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
