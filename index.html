@@ -70,12 +70,24 @@
 
             map.locate({ setView: true, maxZoom: 16 });
 
+            // Используем локальные изображения для меток
+            const userIcon = L.icon({
+                iconUrl: 'user-marker.png', // Локальный файл изображения для метки местоположения
+                iconSize: [32, 32], 
+                iconAnchor: [16, 32], 
+                popupAnchor: [0, -32]
+            });
+
+            const placeIcon = L.icon({
+                iconUrl: 'place-marker.png', // Локальный файл изображения для метки пользователя
+                iconSize: [32, 32], 
+                iconAnchor: [16, 32], 
+                popupAnchor: [0, -32]
+            });
+
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: L.icon({ 
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-                        iconSize: [25, 41] 
-                    })}).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng);
                 }
@@ -85,12 +97,7 @@
                 if (placeMarker) map.removeLayer(placeMarker);
 
                 let center = map.getCenter();
-                placeMarker = L.marker(center, { 
-                    icon: L.icon({
-                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png', // Здесь используем иконку
-                        iconSize: [25, 41] 
-                    })
-                }).addTo(map)
+                placeMarker = L.marker(center, { icon: placeIcon }).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
 
                 addBtn.style.display = "none";
@@ -158,7 +165,7 @@
                 });
 
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng]).addTo(map);
+                    L.marker([lat, lng], { icon: placeIcon }).addTo(map);
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
