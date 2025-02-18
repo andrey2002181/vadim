@@ -17,11 +17,20 @@
             padding: 12px 24px; background: #0088cc; color: #fff; border: none;
             border-radius: 8px; font-size: 16px; cursor: pointer; z-index: 1000;
             user-select: none; /* Предотвращаем выделение текста */
+            -webkit-user-select: none; /* Для старых браузеров */
+            -moz-user-select: none;
         }
 
         #add-btn { bottom: 80px; }
         #save-btn { bottom: 20px; display: none; }
         #locate-btn { bottom: 140px; background: #ff6600; }
+
+        /* Убираем выделение текста при сенсорном нажатии */
+        body, html {
+            -webkit-touch-callout: none; /* Отключение выделения текста при удержании */
+            -webkit-user-select: none; /* Отключаем выделение текста */
+            -moz-user-select: none; /* Для Firefox */
+        }
     </style>
 </head>
 <body>
