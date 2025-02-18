@@ -64,7 +64,12 @@
                 if (placeMarker) map.removeLayer(placeMarker);
 
                 let center = map.getCenter();
-                placeMarker = L.marker(center, { draggable: true }).addTo(map)
+                placeMarker = L.marker(center, { 
+                    icon: L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+                        iconSize: [25, 41] 
+                    })
+                }).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
 
                 addBtn.style.display = "none";
