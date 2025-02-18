@@ -152,6 +152,18 @@
                 }
             });
 
+            closeBtn.addEventListener("click", () => {
+                // Удаляем маркер и восстанавливаем интерфейс
+                if (placeMarker) {
+                    map.removeLayer(placeMarker);
+                    placeMarker = null;
+                }
+
+                addBtn.style.display = "block";
+                saveBtn.style.display = "none";
+                closeBtn.style.display = "none"; // Скрываем крестик
+            });
+
             loadMarkers();
             setInterval(loadMarkers, 60000);
         }
