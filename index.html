@@ -70,8 +70,9 @@
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
 
-                // Сцентрировать карту на метке
+                // Центрируем карту на метке и фиксируем её в центре
                 map.setView(center, map.getZoom());
+                updateMarkerPosition(center);
             });
 
             saveBtn.addEventListener("click", async () => {
@@ -99,8 +100,22 @@
                 map.locate({ setView: true, maxZoom: 16 });
             });
 
+            // Обновление положения метки в центре карты
+            map.on('move', () => {
+                if (placeMarker) {
+                    let center = map.getCenter();
+                    updateMarkerPosition(center);
+                }
+            });
+
             loadMarkers();
             setInterval(loadMarkers, 60000);
+        }
+
+        function updateMarkerPosition(center) {
+            if (placeMarker) {
+                placeMarker.setLatLng(center); // Центрируем метку на текущей позиции карты
+            }
         }
 
         async function loadMarkers() {
