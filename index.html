@@ -180,6 +180,9 @@
                 let response = await fetch(`${serverUrl}/get_markers`);
                 let markers = await response.json();
 
+                // Проверка данных на сервере
+                console.log("Загруженные метки:", markers);
+
                 map.eachLayer(layer => {
                     if (layer instanceof L.Marker && layer !== userMarker) {
                         map.removeLayer(layer);
@@ -191,8 +194,12 @@
 
                     // Привязываем событие на клик для отображения времени
                     marker.on('click', function() {
+                        console.log("Клик по маркеру, timestamp:", timestamp);  // Логируем timestamp
+
                         const currentTime = new Date().getTime();
                         const elapsedTime = Math.floor((currentTime - timestamp) / 1000); // Время в секундах
+
+                        console.log("Время прошедшее с добавления метки:", elapsedTime); // Логируем время
 
                         if (elapsedTime >= 0) {
                             const elapsedTimeFormatted = formatTime(elapsedTime);
