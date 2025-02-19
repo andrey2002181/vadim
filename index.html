@@ -67,6 +67,13 @@
             popupAnchor: [0, -32]
         });
 
+        const userIcon = L.icon({
+            iconUrl: 'user-marker.png', // Иконка для текущего местоположения пользователя
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
         function initMap() {
             map = L.map('map', { 
                 zoomControl: false, 
@@ -80,12 +87,12 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            // Функция для отслеживания позиции
-            map.locate({ setView: true, maxZoom: 16 });
+            // Инициализация местоположения
+            map.locate({ setView: false, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng); // Обновляем положение маркера
                 }
@@ -153,7 +160,7 @@
 
             loadMarkers();
             setInterval(loadMarkers, 60000);  // Обновление маркеров каждую минуту
-            setInterval(updateLocation, 5000); // Обновление геопозиции каждые 5 секунд
+            setInterval(updateLocation, 2000); // Обновление геопозиции каждые 2 секунды
         }
 
         function updateMarkerPosition(center) {
@@ -182,7 +189,7 @@
         }
 
         function updateLocation() {
-            map.locate({ setView: true, maxZoom: 16 }); // Обновляем местоположение карты
+            map.locate({ setView: false, maxZoom: 16 }); // Обновляем местоположение карты
         }
 
         document.addEventListener("DOMContentLoaded", initMap);
