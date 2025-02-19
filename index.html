@@ -12,7 +12,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; }
         #map { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-
+        
         .btn {
             position: fixed; left: 50%; transform: translateX(-50%);
             padding: 12px 24px; background: #0088cc; color: #fff; border: none;
@@ -23,14 +23,29 @@
         #add-btn { bottom: 80px; }
         #save-btn { bottom: 20px; display: none; }
         #locate-btn { bottom: 140px; background: #ff6600; }
-        #close-btn { position: absolute; top: 100px; right: 20px; background: red; color: white; border-radius: 50%; width: 40px; height: 40px; text-align: center; font-size: 20px; cursor: pointer; display: none; z-index: 1000; }
+
         .popup-menu {
-            position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
-            background: white; padding: 10px; border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1); display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            display: none;
             z-index: 1001;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
-        .popup-menu button { margin-top: 10px; }
+
+        .popup-menu button {
+            display: block;
+            width: 100%;
+            margin-top: 5px;
+            padding: 5px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -38,12 +53,7 @@
     <button id="add-btn" class="btn">Добавить метку</button>
     <button id="save-btn" class="btn">Сохранить метку</button>
     <button id="locate-btn" class="btn">Моё местоположение</button>
-    <button id="close-btn" class="close-btn">×</button>
-    <div id="popup-menu" class="popup-menu">
-        <p id="marker-time"></p>
-        <button id="delete-marker-btn" class="btn" style="background: red;">Удалить метку</button>
-        <button id="close-popup" class="btn" style="background: gray;">Закрыть</button>
-    </div>
+    <div id="popup-menu" class="popup-menu"></div>
 
     <script>
         const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev";
@@ -51,13 +61,26 @@
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
         const locateBtn = document.getElementById("locate-btn");
-        const closeBtn = document.getElementById("close-btn");
         const popupMenu = document.getElementById("popup-menu");
-        const markerTime = document.getElementById("marker-time");
-        const deleteMarkerBtn = document.getElementById("delete-marker-btn");
-        const closePopup = document.getElementById("close-popup");
-        let userId = Math.random().toString(36).substr(2, 9);
-        
+
+        function initMap() {
+            map = L.map('map', { zoomControl: false }).setView([55.751244, 37.618423], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            map.locate({ setView: true, maxZoom: 16 });
+
+            map.on('locationfound', (e) => {
+                if (!userMarker) {
+                    userMarker = L.marker(e.latlng).addTo(map).bindPopup("Вы здесь");
+                } else {
+                    userMarker.setLatLng(e.latlng);
+                }
+            });
+            
+            map.on('click', () => popupMenu.style.display = 'none');
+            loadMarkers();
+            setInterval(loadMarkers, 60000);
+        }
+
         async function loadMarkers() {
             try {
                 let response = await fetch(`${serverUrl}/get_markers`);
@@ -67,46 +90,39 @@
                         map.removeLayer(layer);
                     }
                 });
-                markers.forEach(({ lat, lng, created_at, owner }) => {
+
+                markers.forEach(({ lat, lng, id, created_at }) => {
                     let marker = L.marker([lat, lng]).addTo(map);
-                    marker.on('click', () => {
-                        let elapsed = Math.floor((Date.now() - new Date(created_at)) / 60000);
-                        markerTime.textContent = `Метка существует ${elapsed} мин.`;
-                        popupMenu.style.display = 'block';
-                        deleteMarkerBtn.style.display = owner === userId ? 'block' : 'none';
-                        deleteMarkerBtn.onclick = async () => {
-                            await fetch(`${serverUrl}/delete_marker`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ lat, lng, owner: userId })
-                            });
-                            popupMenu.style.display = 'none';
-                            loadMarkers();
-                        };
-                    });
+                    marker.on('click', (e) => showPopup(e, id, created_at));
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
             }
         }
-        
-        closePopup.addEventListener('click', () => { popupMenu.style.display = 'none'; });
-        document.addEventListener("DOMContentLoaded", () => {
-            map = L.map('map').setView([55.751244, 37.618423], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-            map.locate({ setView: true, maxZoom: 16 });
-            map.on('locationfound', (e) => {
-                if (!userMarker) {
-                    userMarker = L.marker(e.latlng).addTo(map).bindPopup("Вы здесь");
-                } else {
-                    userMarker.setLatLng(e.latlng);
-                }
-            });
-            loadMarkers();
-            setInterval(loadMarkers, 60000);
-        });
+
+        function showPopup(event, markerId, createdAt) {
+            let age = Math.floor((Date.now() - new Date(createdAt)) / 60000);
+            popupMenu.innerHTML = `<p>Метка создана ${age} мин. назад</p>`;
+            let deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Удалить";
+            deleteBtn.onclick = async () => {
+                await fetch(`${serverUrl}/delete_marker`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id: markerId })
+                });
+                popupMenu.style.display = "none";
+                loadMarkers();
+            };
+            popupMenu.appendChild(deleteBtn);
+
+            let { x, y } = map.latLngToContainerPoint(event.latlng);
+            popupMenu.style.left = `${x}px`;
+            popupMenu.style.top = `${y}px`;
+            popupMenu.style.display = "block";
+        }
+
+        document.addEventListener("DOMContentLoaded", initMap);
     </script>
 </body>
 </html>
