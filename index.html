@@ -102,6 +102,7 @@
                 map.setView(center, map.getZoom());
                 updateMarkerPosition(center);
 
+                // Удаление маркера через 60 секунд
                 setTimeout(() => {
                     if (placeMarker && placeMarker.getPopup()._content === "Переместите и сохраните") {
                         map.removeLayer(placeMarker);
