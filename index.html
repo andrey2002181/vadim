@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Карта ДПС</title>
+    <!-- Подключаем Telegram Web App JS -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Подключаем Leaflet JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
     <style>
@@ -32,7 +35,7 @@
         }
 
         body, html {
-            -webkit-touch-callout: none;
+            -webkit-touch-callout: none; /* Отключение выделения текста */
             -webkit-user-select: none; 
             -moz-user-select: none; 
         }
@@ -53,47 +56,49 @@
         const locateBtn = document.getElementById("locate-btn");
         const closeBtn = document.getElementById("close-btn");
 
+        // Иконки для меток
         const pinIcon = L.icon({
-            iconUrl: 'pin.png',
+            iconUrl: 'pin.png', // Иконка для добавляемой метки
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         const placeIcon = L.icon({
-            iconUrl: 'place-marker.png',
+            iconUrl: 'place-marker.png', // Иконка для сохранённой метки
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         const userIcon = L.icon({
-            iconUrl: 'user-marker.png',
+            iconUrl: 'user-marker.png', // Иконка для местоположения пользователя
             iconSize: [32, 32],
             iconAnchor: [16, 32],
             popupAnchor: [0, -32]
         });
 
         function initMap() {
+            // Инициализация карты
             map = L.map('map', { 
                 zoomControl: false, 
-                touchZoom: true,
-                scrollWheelZoom: true,
-                dragging: true,
-                tap: true
+                touchZoom: true,    // Включаем жесты зума
+                scrollWheelZoom: true, // Включаем зум колесом мыши
+                dragging: true,     // Разрешаем перетаскивание карты
+                tap: true           // Разрешаем сенсорные события
             }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
-            map.locate({ setView: false, maxZoom: 16 });
+            map.locate({ setView: true, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
                     userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
-                    userMarker.setLatLng(e.latlng); 
+                    userMarker.setLatLng(e.latlng);
                 }
             });
 
@@ -106,7 +111,7 @@
 
                 addBtn.style.display = "none";
                 saveBtn.style.display = "block";
-                closeBtn.style.display = "block";
+                closeBtn.style.display = "block"; // Показываем кнопку крестика
 
                 map.setView(center, map.getZoom());
                 updateMarkerPosition(center);
@@ -114,21 +119,21 @@
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
-                const timestamp = Date.now(); // Метка времени в миллисекундах
 
                 try {
                     await fetch(`${serverUrl}/add_marker`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng, timestamp })
+                        body: JSON.stringify({ lat: pos.lat, lng: pos.lng })
                     });
 
                     alert("Метка сохранена!");
-                    placeMarker.setIcon(placeIcon);
+                    placeMarker.setIcon(placeIcon); // Заменяем иконку на placeIcon после сохранения
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
-                    closeBtn.style.display = "none";
+                    closeBtn.style.display = "none"; // Скрываем крестик
+
                     loadMarkers();
                 } catch (error) {
                     console.error("Ошибка при отправке данных на сервер:", error);
@@ -148,6 +153,7 @@
             });
 
             closeBtn.addEventListener("click", () => {
+                // Удаляем маркер и восстанавливаем интерфейс
                 if (placeMarker) {
                     map.removeLayer(placeMarker);
                     placeMarker = null;
@@ -155,12 +161,11 @@
 
                 addBtn.style.display = "block";
                 saveBtn.style.display = "none";
-                closeBtn.style.display = "none";
+                closeBtn.style.display = "none"; // Скрываем крестик
             });
 
             loadMarkers();
-            setInterval(loadMarkers, 60000);
-            setInterval(updateLocation, 2000);
+            setInterval(loadMarkers, 2000); // Обновление меток каждые 2 секунды
         }
 
         function updateMarkerPosition(center) {
@@ -181,12 +186,9 @@
                 });
 
                 markers.forEach(({ lat, lng, timestamp }) => {
-                    console.log("timestamp:", timestamp); // Проверим, что timestamp приходит корректно
-
-                    const timeLeft = getTimeLeft(timestamp);
-
+                    const timeLeft = getTimeLeft(timestamp); // Время жизни метки
                     const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
-                    marker.bindPopup(`Время жизни метки: ${timeLeft}`).openPopup();
+                    marker.bindPopup(`Время жизни метки: ${timeLeft}`);
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
@@ -194,29 +196,25 @@
         }
 
         function getTimeLeft(timestamp) {
-            // Проверим, что timestamp действительно число
-            if (isNaN(timestamp)) {
+            const parsedTimestamp = Date.parse(timestamp);
+
+            if (isNaN(parsedTimestamp)) {
                 console.error("Невалидная метка времени:", timestamp);
                 return "Ошибка времени";
             }
 
             const currentTime = Date.now();
-            const diff = currentTime - timestamp; // Разница во времени в миллисекундах
+            const diff = currentTime - parsedTimestamp;
 
-            // Проверим, что разница во времени больше нуля
             if (diff <= 0) {
                 return "Метка устарела";
             }
 
-            const hours = Math.floor(diff / (1000 * 60 * 60)); // Часы
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)); // Минуты
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000); // Секунды
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-            return `${hours} ч. ${minutes} мин. ${seconds} сек.`; // Формат времени
-        }
-
-        function updateLocation() {
-            map.locate({ setView: false, maxZoom: 16 });
+            return `${hours} ч. ${minutes} мин. ${seconds} сек.`;
         }
 
         document.addEventListener("DOMContentLoaded", initMap);
