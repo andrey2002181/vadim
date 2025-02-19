@@ -118,7 +118,7 @@
 
                 // Удалить метку через 60 секунд (можно изменить)
                 setTimeout(() => {
-                    if (placeMarker) {
+                    if (placeMarker && placeMarker.getPopup()._content === "Переместите и сохраните") {
                         map.removeLayer(placeMarker);
                     }
                 }, 60000); // 60 секунд
