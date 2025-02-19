@@ -36,15 +36,6 @@
             -webkit-user-select: none; 
             -moz-user-select: none; 
         }
-
-        .user-marker {
-            width: 32px;
-            height: 32px;
-            background: url('user-marker.png') no-repeat center;
-            background-size: contain;
-            transform-origin: center;
-            transition: transform 0.2s linear;
-        }
     </style>
 </head>
 <body>
@@ -62,12 +53,29 @@
         const locateBtn = document.getElementById("locate-btn");
         const closeBtn = document.getElementById("close-btn");
 
-        const userIcon = L.divIcon({
-            className: "user-marker",
-            html: `<div id="user-marker" class="user-marker"></div>`,
+        // Иконки для меток
+        const pinIcon = L.icon({
+            iconUrl: 'pin.png',
             iconSize: [32, 32],
-            iconAnchor: [16, 16]
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
         });
+
+        const placeIcon = L.icon({
+            iconUrl: 'place-marker.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        function createRotatableIcon(rotation) {
+            return L.divIcon({
+                className: "rotating-icon",
+                html: `<img src="user-marker.png" style="width: 32px; height: 32px; transform: rotate(${rotation}deg);">`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+        }
 
         function initMap() {
             map = L.map('map', { 
@@ -86,16 +94,19 @@
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: createRotatableIcon(userHeading) }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng);
                 }
             });
 
+            // Слушаем изменение ориентации устройства и поворачиваем маркер
             window.addEventListener("deviceorientation", (event) => {
                 if (event.alpha !== null) {
                     userHeading = event.alpha;
-                    rotateUserMarker(userHeading);
+                    if (userMarker) {
+                        userMarker.setIcon(createRotatableIcon(userHeading));
+                    }
                 }
             });
 
@@ -103,7 +114,7 @@
                 if (placeMarker) map.removeLayer(placeMarker);
 
                 let center = map.getCenter();
-                placeMarker = L.marker(center, { icon: userIcon }).addTo(map)
+                placeMarker = L.marker(center, { icon: pinIcon }).addTo(map)
                     .bindPopup("Переместите и сохраните").openPopup();
 
                 addBtn.style.display = "none";
@@ -125,7 +136,7 @@
                     });
 
                     alert("Метка сохранена!");
-                    placeMarker.setIcon(userIcon);
+                    placeMarker.setIcon(placeIcon);
 
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
@@ -170,13 +181,6 @@
             }
         }
 
-        function rotateUserMarker(angle) {
-            const markerElement = document.getElementById("user-marker");
-            if (markerElement) {
-                markerElement.style.transform = `rotate(${angle}deg)`;
-            }
-        }
-
         async function loadMarkers() {
             try {
                 let response = await fetch(`${serverUrl}/get_markers`);
@@ -189,7 +193,7 @@
                 });
 
                 markers.forEach(({ lat, lng }) => {
-                    L.marker([lat, lng], { icon: userIcon }).addTo(map);
+                    L.marker([lat, lng], { icon: placeIcon }).addTo(map);
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
