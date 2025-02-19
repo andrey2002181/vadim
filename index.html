@@ -194,13 +194,8 @@
                     userHeading = event.alpha; // Получаем угол в градусах
 
                     if (userMarker) {
-                        userMarker.setIcon(L.icon({
-                            iconUrl: 'user-marker.png',
-                            iconSize: [32, 32],
-                            iconAnchor: [16, 32],
-                            popupAnchor: [0, -32],
-                            rotationAngle: userHeading // Поворачиваем иконку в зависимости от угла
-                        }));
+                        // Обновляем маркер, вращая его на основе угла устройства
+                        userMarker.setRotationAngle(userHeading);
                     }
                 }, false);
             } else {
