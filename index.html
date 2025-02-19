@@ -194,9 +194,12 @@
         function getTimeLeft(timestamp) {
             const currentTime = Date.now();
             const diff = currentTime - timestamp; // Разница во времени в миллисекундах
-            const minutes = Math.floor((diff / 1000) / 60); // Преобразуем в минуты
-            const remainingTime = Math.max(0, 5 - minutes); // Время жизни метки 5 минут
-            return `${remainingTime} мин`;
+
+            const hours = Math.floor(diff / (1000 * 60 * 60)); // Часы
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)); // Минуты
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000); // Секунды
+
+            return `${hours} ч. ${minutes} мин. ${seconds} сек.`; // Формат времени
         }
 
         function updateLocation() {
