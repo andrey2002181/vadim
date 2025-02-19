@@ -48,7 +48,6 @@
     <script>
         const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev";
         let map, userMarker, placeMarker;
-        let userHeading = 0; // Направление устройства
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
         const locateBtn = document.getElementById("locate-btn");
@@ -81,13 +80,14 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
+            // Функция для отслеживания позиции
             map.locate({ setView: true, maxZoom: 16 });
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: createRotatedIcon(userHeading) }).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng).addTo(map).bindPopup("Вы здесь");
                 } else {
-                    userMarker.setLatLng(e.latlng);
+                    userMarker.setLatLng(e.latlng); // Обновляем положение маркера
                 }
             });
 
@@ -152,8 +152,8 @@
             });
 
             loadMarkers();
-            setInterval(loadMarkers, 60000);
-            initDeviceOrientation();
+            setInterval(loadMarkers, 60000);  // Обновление маркеров каждую минуту
+            setInterval(updateLocation, 5000); // Обновление геопозиции каждые 5 секунд
         }
 
         function updateMarkerPosition(center) {
@@ -181,29 +181,8 @@
             }
         }
 
-        function createRotatedIcon(rotation) {
-            return L.divIcon({
-                className: 'user-marker',
-                html: `<img src="user-marker.png" style="transform: rotate(${rotation}deg); width: 32px; height: 32px;"/>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-            });
-        }
-
-        function initDeviceOrientation() {
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener("deviceorientation", (event) => {
-                    userHeading = event.alpha; // Получаем угол в градусах
-
-                    if (userMarker) {
-                        // Обновляем маркер, вращая его на основе угла устройства
-                        userMarker.setIcon(createRotatedIcon(userHeading));
-                    }
-                }, false);
-            } else {
-                console.log("Device Orientation not supported");
-            }
+        function updateLocation() {
+            map.locate({ setView: true, maxZoom: 16 }); // Обновляем местоположение карты
         }
 
         document.addEventListener("DOMContentLoaded", initMap);
