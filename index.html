@@ -47,13 +47,13 @@
 
     <script>
         const serverUrl = "https://126db9fb-99db-43b2-afe8-020160a29592-00-3ikbo4x79bfza.kirk.replit.dev";
-        let map, userMarker, placeMarker, userHeading = 0;
+        let map, userMarker, placeMarker;
+        let userHeading = 0; // Направление устройства
         const addBtn = document.getElementById("add-btn");
         const saveBtn = document.getElementById("save-btn");
         const locateBtn = document.getElementById("locate-btn");
         const closeBtn = document.getElementById("close-btn");
 
-        // Иконки для меток
         const pinIcon = L.icon({
             iconUrl: 'pin.png',
             iconSize: [32, 32],
@@ -68,22 +68,20 @@
             popupAnchor: [0, -32]
         });
 
-        function createRotatableIcon(rotation) {
-            return L.divIcon({
-                className: "rotating-icon",
-                html: `<img src="user-marker.png" style="width: 32px; height: 32px; transform: rotate(${rotation}deg);">`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 16]
-            });
-        }
+        const userIcon = L.icon({
+            iconUrl: 'user-marker.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
 
         function initMap() {
             map = L.map('map', { 
                 zoomControl: false, 
-                touchZoom: true,    
-                scrollWheelZoom: true, 
-                dragging: true,     
-                tap: true           
+                touchZoom: true,
+                scrollWheelZoom: true,
+                dragging: true,
+                tap: true
             }).setView([55.751244, 37.618423], 13);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -94,19 +92,9 @@
 
             map.on('locationfound', (e) => {
                 if (!userMarker) {
-                    userMarker = L.marker(e.latlng, { icon: createRotatableIcon(userHeading) }).addTo(map).bindPopup("Вы здесь");
+                    userMarker = L.marker(e.latlng, { icon: userIcon }).addTo(map).bindPopup("Вы здесь");
                 } else {
                     userMarker.setLatLng(e.latlng);
-                }
-            });
-
-            // Слушаем изменение ориентации устройства и поворачиваем маркер
-            window.addEventListener("deviceorientation", (event) => {
-                if (event.alpha !== null) {
-                    userHeading = event.alpha;
-                    if (userMarker) {
-                        userMarker.setIcon(createRotatableIcon(userHeading));
-                    }
                 }
             });
 
@@ -141,7 +129,6 @@
                     saveBtn.style.display = "none";
                     addBtn.style.display = "block";
                     closeBtn.style.display = "none";
-
                     loadMarkers();
                 } catch (error) {
                     console.error("Ошибка при отправке данных на сервер:", error);
@@ -173,6 +160,7 @@
 
             loadMarkers();
             setInterval(loadMarkers, 60000);
+            initDeviceOrientation();
         }
 
         function updateMarkerPosition(center) {
@@ -197,6 +185,26 @@
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
+            }
+        }
+
+        function initDeviceOrientation() {
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener("deviceorientation", (event) => {
+                    userHeading = event.alpha; // Получаем угол в градусах
+
+                    if (userMarker) {
+                        userMarker.setIcon(L.icon({
+                            iconUrl: 'user-marker.png',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 32],
+                            popupAnchor: [0, -32],
+                            rotationAngle: userHeading // Поворачиваем иконку в зависимости от угла
+                        }));
+                    }
+                }, false);
+            } else {
+                console.log("Device Orientation not supported");
             }
         }
 
