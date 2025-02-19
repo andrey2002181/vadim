@@ -165,42 +165,42 @@
         }
 
         async function loadMarkers() {
-            try {
-                let response = await fetch(`${serverUrl}/get_markers`);
-                let markers = await response.json();
+    try {
+        let response = await fetch(`${serverUrl}/get_markers`);
+        let markers = await response.json();
 
-                // Удаляем только метки с иконкой placeIcon
-                map.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer.options.icon === placeIcon) {
-                        map.removeLayer(layer);
-                    }
-                });
-
-                // Добавляем метки с иконкой placeIcon и обработчиком click
-                markers.forEach(({ lat, lng, timestamp }) => {
-                    const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
-
-                    // Добавляем обработчик click для отображения времени жизни
-                    marker.on('click', () => {
-                        const createdTime = new Date(timestamp);
-                        if (isNaN(createdTime)) {
-                            console.error("Некорректное значение timestamp:", timestamp);
-                            marker.bindPopup("Ошибка: некорректное время создания").openPopup();
-                            return;
-                        }
-
-                        const currentTime = new Date();
-                        const diffTime = Math.floor((currentTime - createdTime) / (1000 * 60)); // Время в минутах
-
-                        // Обновляем содержимое popup
-                        marker.setPopupContent(`Метка создана ${diffTime} минут назад`);
-                        marker.openPopup();
-                    });
-                });
-            } catch (error) {
-                console.error("Ошибка загрузки меток:", error);
+        // Удаляем только метки с иконкой placeIcon
+        map.eachLayer(layer => {
+            if (layer instanceof L.Marker && layer.options.icon === placeIcon) {
+                map.removeLayer(layer);
             }
-        }
+        });
+
+        // Добавляем метки с иконкой placeIcon и обработчиком click
+        markers.forEach(({ lat, lng, timestamp }) => {
+            const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
+
+            // Добавляем обработчик click для отображения времени жизни
+            marker.on('click', () => {
+                const createdTime = new Date(timestamp);
+                if (isNaN(createdTime)) {
+                    console.error("Некорректное значение timestamp:", timestamp);
+                    marker.bindPopup("Ошибка: некорректное время создания").openPopup();
+                    return;
+                }
+
+                const currentTime = new Date();
+                const diffTime = Math.floor((currentTime - createdTime) / (1000 * 60)); // Время в минутах
+
+                // Обновляем содержимое popup
+                marker.setPopupContent(`Метка создана ${diffTime} минут назад`);
+                marker.openPopup();
+            });
+        });
+    } catch (error) {
+        console.error("Ошибка загрузки меток:", error);
+    }
+}
 
         document.addEventListener("DOMContentLoaded", initMap);
     </script>
