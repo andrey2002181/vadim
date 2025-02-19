@@ -183,10 +183,18 @@
                     // Добавляем обработчик click для отображения времени жизни
                     marker.on('click', () => {
                         const createdTime = new Date(timestamp);
+                        if (isNaN(createdTime)) {
+                            console.error("Некорректное значение timestamp:", timestamp);
+                            marker.bindPopup("Ошибка: некорректное время создания").openPopup();
+                            return;
+                        }
+
                         const currentTime = new Date();
                         const diffTime = Math.floor((currentTime - createdTime) / (1000 * 60)); // Время в минутах
 
-                        marker.bindPopup(`Метка создана ${diffTime} минут назад`).openPopup();
+                        // Обновляем содержимое popup
+                        marker.setPopupContent(`Метка создана ${diffTime} минут назад`);
+                        marker.openPopup();
                     });
                 });
             } catch (error) {
