@@ -89,7 +89,7 @@
             });
 
             addBtn.addEventListener("click", () => {
-                if (placeMarker) map.removeLayer(placeMarker);
+                if (placeMarker) return; // Если метка уже есть, не добавлять новую
 
                 let center = map.getCenter();
                 placeMarker = L.marker(center, { icon: pinIcon }).addTo(map)
