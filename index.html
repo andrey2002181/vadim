@@ -115,6 +115,13 @@
 
                 map.setView(center, map.getZoom());
                 updateMarkerPosition(center);
+
+                // Удалить метку через 60 секунд (можно изменить)
+                setTimeout(() => {
+                    if (placeMarker) {
+                        map.removeLayer(placeMarker);
+                    }
+                }, 60000); // 60 секунд
             });
 
             saveBtn.addEventListener("click", async () => {
@@ -224,7 +231,7 @@
                     // Запоминаем метку и её время, чтобы удалить через некоторое время
                     setTimeout(() => {
                         map.removeLayer(marker); // Удаляем метку через 5 минут
-                    }, 6000); // 5 минут = 300000 миллисекунд
+                    }, 300000); // 5 минут = 300000 миллисекунд
                 });
             } catch (error) {
                 console.error("Ошибка загрузки меток:", error);
