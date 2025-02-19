@@ -114,7 +114,7 @@
 
             saveBtn.addEventListener("click", async () => {
                 let pos = placeMarker.getLatLng();
-                const timestamp = Date.now();
+                const timestamp = Date.now(); // Метка времени в миллисекундах
 
                 try {
                     await fetch(`${serverUrl}/add_marker`, {
@@ -181,6 +181,8 @@
                 });
 
                 markers.forEach(({ lat, lng, timestamp }) => {
+                    console.log("timestamp:", timestamp); // Проверим, что timestamp приходит корректно
+
                     const timeLeft = getTimeLeft(timestamp);
 
                     const marker = L.marker([lat, lng], { icon: placeIcon }).addTo(map);
@@ -192,8 +194,19 @@
         }
 
         function getTimeLeft(timestamp) {
+            // Проверим, что timestamp действительно число
+            if (isNaN(timestamp)) {
+                console.error("Невалидная метка времени:", timestamp);
+                return "Ошибка времени";
+            }
+
             const currentTime = Date.now();
             const diff = currentTime - timestamp; // Разница во времени в миллисекундах
+
+            // Проверим, что разница во времени больше нуля
+            if (diff <= 0) {
+                return "Метка устарела";
+            }
 
             const hours = Math.floor(diff / (1000 * 60 * 60)); // Часы
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)); // Минуты
