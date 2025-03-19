@@ -129,6 +129,38 @@
             from { transform: translateY(100%); }
             to { transform: translateY(0); }
         }
+        .location-marker {
+            width: 24px;
+            height: 24px;
+            background: #2481cc;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(36, 129, 204, 0.5);
+            position: relative;
+            transform-origin: center;
+        }
+        .location-marker::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .location-marker::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            width: 2px;
+            height: 8px;
+            background: #2481cc;
+            transform: translateX(-50%);
+            transform-origin: bottom;
+        }
     </style>
 </head>
 <body>
@@ -138,7 +170,7 @@
         <div class="loading-text">Определение местоположения...</div>
     </div>
     <div class="error-message" id="errorMessage"></div>
-    <button class="center-button" id="centerButton" title="Центрировать карту">
+    <button class="center-button" id="centerButton" title="Выровнять карту">
         <svg viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
         </svg>
@@ -155,6 +187,7 @@
         let watchId = null;
         let map = null;
         let isFirstLocation = true;
+        let currentRotation = 0;
 
         // Инициализация Telegram Mini App
         let tg;
@@ -209,6 +242,14 @@
             map.addLayer(locationLayer);
         }
 
+        // Функция создания маркера
+        function createMarkerElement(rotation) {
+            const marker = document.createElement('div');
+            marker.className = 'location-marker';
+            marker.style.transform = `rotate(${rotation}deg)`;
+            return marker;
+        }
+
         // Функция обновления местоположения
         function updateLocation(position) {
             const coordinates = ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude]);
@@ -226,15 +267,10 @@
             });
 
             const style = new ol.style.Style({
-                image: new ol.style.Circle({
-                    radius: 8,
-                    fill: new ol.style.Fill({
-                        color: '#2481cc'
-                    }),
-                    stroke: new ol.style.Stroke({
-                        color: '#ffffff',
-                        width: 2
-                    })
+                image: new ol.style.Image({
+                    element: createMarkerElement(currentRotation),
+                    scale: 1,
+                    anchor: [0.5, 0.5]
                 })
             });
 
@@ -242,7 +278,8 @@
             locationLayer.getSource().addFeature(locationFeature);
 
             if (isFirstLocation) {
-                centerOnLocation(true);
+                map.getView().setCenter(coordinates);
+                map.getView().setZoom(18);
                 isFirstLocation = false;
                 document.getElementById('loadingOverlay').style.opacity = '0';
                 setTimeout(() => {
@@ -252,39 +289,37 @@
         }
 
         // Функция центрирования на местоположении
-        function centerOnLocation(animate = false) {
+        function centerOnLocation() {
             if (locationFeature && map) {
                 const coordinates = locationFeature.getGeometry().getCoordinates();
-                if (animate) {
-                    map.getView().animate({
-                        center: coordinates,
-                        zoom: 18,
-                        duration: 800,
-                        easing: ol.easing.easeOut
-                    });
-                } else {
-                    map.getView().animate({
-                        center: coordinates,
-                        zoom: 18,
-                        duration: 500
-                    });
-                }
+                map.getView().setCenter(coordinates);
+                map.getView().setZoom(18);
             }
         }
 
-        // Функция центрирования карты
-        function centerMap() {
+        // Функция выравнивания карты
+        function alignMap() {
             if (map) {
-                const view = map.getView();
-                const center = view.getCenter();
-                const zoom = view.getZoom();
-                view.animate({
-                    center: center,
-                    zoom: zoom,
-                    duration: 500
-                });
+                map.getView().setRotation(0);
             }
         }
+
+        // Обработчик изменения ориентации устройства
+        window.addEventListener('deviceorientation', function(event) {
+            if (event.alpha !== null) {
+                currentRotation = event.alpha;
+                if (locationFeature) {
+                    const style = new ol.style.Style({
+                        image: new ol.style.Image({
+                            element: createMarkerElement(currentRotation),
+                            scale: 1,
+                            anchor: [0.5, 0.5]
+                        })
+                    });
+                    locationFeature.setStyle(style);
+                }
+            }
+        });
 
         // Функция получения местоположения
         function getLocation() {
@@ -350,7 +385,7 @@
         });
 
         document.getElementById('centerButton').addEventListener('click', function() {
-            centerMap();
+            alignMap();
         });
 
         // Автоматическое определение местоположения при загрузке
