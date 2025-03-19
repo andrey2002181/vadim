@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=portrait">
     <meta http-equiv="ScreenOrientation" content="autoLock:portrait">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+    <script>
+        // Блокировка ориентации экрана
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait').catch(function(error) {
+                console.log('Ошибка блокировки ориентации:', error);
+            });
+        }
+    </script>
     <style>
         body, html {
             margin: 0;
@@ -296,7 +304,8 @@
                 ],
                 view: new ol.View({
                     center: coordinates || ol.proj.fromLonLat([0, 0]),
-                    zoom: coordinates ? 15 : 2
+                    zoom: 15,
+                    rotation: 0
                 })
             });
 
@@ -333,35 +342,7 @@
                 geometry: new ol.geom.Point(coordinates)
             });
 
-            const style = new ol.style.Style({
-                image: new ol.style.Icon({
-                    anchor: [0.5, 0.5],
-                    anchorXUnits: 'fraction',
-                    anchorYUnits: 'fraction',
-                    rotateWithView: true,
-                    rotation: currentRotation,
-                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-                        <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                                    <feComposite in="SourceGraphic" in2="coloredBlur" operator="over"/>
-                                </filter>
-                                <radialGradient id="shadowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                    <stop offset="0%" style="stop-color:rgba(227,30,36,0.4)"/>
-                                    <stop offset="100%" style="stop-color:rgba(227,30,36,0)"/>
-                                </radialGradient>
-                            </defs>
-                            <circle cx="24" cy="24" r="24" fill="url(#shadowGradient)" filter="url(#glow)" class="shadow-circle"/>
-                            <circle cx="24" cy="24" r="12" fill="#E31E24" stroke="#ffffff" stroke-width="3"/>
-                            <circle cx="24" cy="24" r="4" fill="#ffffff"/>
-                            <path d="M24 0L28 24L24 20L20 24L24 0Z" fill="#E31E24" filter="url(#glow)"/>
-                        </svg>
-                    `),
-                    scale: 1
-                })
-            });
-
+            const style = createLocationStyle(currentRotation);
             locationFeature.setStyle(style);
             locationLayer.getSource().addFeature(locationFeature);
 
@@ -433,43 +414,50 @@
                 heading = event.webkitCompassHeading;
             } else if (event.alpha !== null) {
                 // для Android устройств
-                heading = 360 - event.alpha;
+                heading = event.alpha;
             }
 
             if (typeof heading === 'number') {
-                currentRotation = heading * (Math.PI / 180);
+                // Преобразуем градусы в радианы и инвертируем для правильного направления
+                currentRotation = (-heading * Math.PI) / 180;
+                
                 if (locationFeature) {
-                    const style = new ol.style.Style({
-                        image: new ol.style.Icon({
-                            anchor: [0.5, 0.5],
-                            anchorXUnits: 'fraction',
-                            anchorYUnits: 'fraction',
-                            rotateWithView: true,
-                            rotation: currentRotation,
-                            src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-                                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                    <defs>
-                                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                                            <feComposite in="SourceGraphic" in2="coloredBlur" operator="over"/>
-                                        </filter>
-                                        <radialGradient id="shadowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                                            <stop offset="0%" style="stop-color:rgba(227,30,36,0.4)"/>
-                                            <stop offset="100%" style="stop-color:rgba(227,30,36,0)"/>
-                                        </radialGradient>
-                                    </defs>
-                                    <circle cx="24" cy="24" r="24" fill="url(#shadowGradient)" filter="url(#glow)" class="shadow-circle"/>
-                                    <circle cx="24" cy="24" r="12" fill="#E31E24" stroke="#ffffff" stroke-width="3"/>
-                                    <circle cx="24" cy="24" r="4" fill="#ffffff"/>
-                                    <path d="M24 0L28 24L24 20L20 24L24 0Z" fill="#E31E24" filter="url(#glow)"/>
-                                </svg>
-                            `),
-                            scale: 1
-                        })
-                    });
+                    const style = createLocationStyle(currentRotation);
                     locationFeature.setStyle(style);
                 }
             }
+        }
+
+        // Выносим создание стиля в отдельную функцию
+        function createLocationStyle(rotation) {
+            return new ol.style.Style({
+                image: new ol.style.Icon({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    rotateWithView: true,
+                    rotation: rotation,
+                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+                        <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                    <feComposite in="SourceGraphic" in2="coloredBlur" operator="over"/>
+                                </filter>
+                                <radialGradient id="shadowGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                                    <stop offset="0%" style="stop-color:rgba(227,30,36,0.4)"/>
+                                    <stop offset="100%" style="stop-color:rgba(227,30,36,0)"/>
+                                </radialGradient>
+                            </defs>
+                            <circle cx="24" cy="24" r="24" fill="url(#shadowGradient)" filter="url(#glow)" class="shadow-circle"/>
+                            <circle cx="24" cy="24" r="12" fill="#E31E24" stroke="#ffffff" stroke-width="3"/>
+                            <circle cx="24" cy="24" r="4" fill="#ffffff"/>
+                            <path d="M24 0L28 24L24 20L20 24L24 0Z" fill="#E31E24" filter="url(#glow)"/>
+                        </svg>
+                    `),
+                    scale: 1
+                })
+            });
         }
 
         // Функция получения местоположения
@@ -483,33 +471,32 @@
             document.getElementById('loadingOverlay').style.display = 'flex';
             document.getElementById('loadingOverlay').style.opacity = '1';
             
+            // Сначала получаем текущее местоположение один раз
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const coordinates = ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude]);
+                    if (!map) {
+                        initMap(coordinates);
+                    }
+                    updateLocation(position);
+                },
+                function(error) {
+                    console.error('Ошибка получения местоположения:', error);
+                    initMap(); // Инициализируем карту с дефолтными координатами в случае ошибки
+                    handleLocationError(error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+            
+            // Затем запускаем постоянное отслеживание
             try {
                 watchId = navigator.geolocation.watchPosition(
-                    function(position) {
-                        updateLocation(position);
-                    },
-                    function(error) {
-                        console.error('Ошибка получения местоположения:', error);
-                        let errorMessage = 'Не удалось получить ваше местоположение.';
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = 'Доступ к геолокации запрещен. Проверьте настройки браузера.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = 'Информация о местоположении недоступна.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = 'Превышено время ожидания определения местоположения.';
-                                break;
-                            default:
-                                errorMessage = 'Произошла ошибка при определении местоположения.';
-                        }
-                        showError(errorMessage);
-                        document.getElementById('loadingOverlay').style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById('loadingOverlay').style.display = 'none';
-                        }, 300);
-                    },
+                    updateLocation,
+                    handleLocationError,
                     {
                         enableHighAccuracy: true,
                         timeout: 10000,
@@ -524,6 +511,30 @@
                     document.getElementById('loadingOverlay').style.display = 'none';
                 }, 300);
             }
+        }
+
+        // Функция обработки ошибок геолокации
+        function handleLocationError(error) {
+            console.error('Ошибка получения местоположения:', error);
+            let errorMessage = 'Не удалось получить ваше местоположение.';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Доступ к геолокации запрещен. Проверьте настройки браузера.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Информация о местоположении недоступна.';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Превышено время ожидания определения местоположения.';
+                    break;
+                default:
+                    errorMessage = 'Произошла ошибка при определении местоположения.';
+            }
+            showError(errorMessage);
+            document.getElementById('loadingOverlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }, 300);
         }
 
         // Обработчики нажатий на кнопки
@@ -541,8 +552,7 @@
 
         // Автоматическое определение местоположения при загрузке
         window.addEventListener('load', function() {
-            initMap();
-            getLocation();
+            getLocation(); // Убираем вызов initMap(), так как он будет вызван в getLocation()
         });
 
         // Остановка отслеживания при закрытии страницы
