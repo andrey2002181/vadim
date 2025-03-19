@@ -3,16 +3,32 @@
 <head>
     <title>Карта мира</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=portrait">
-    <meta http-equiv="ScreenOrientation" content="autoLock:portrait">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="orientation" content="portrait">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
     <script>
         // Блокировка ориентации экрана
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('portrait').catch(function(error) {
-                console.log('Ошибка блокировки ориентации:', error);
-            });
+        async function lockOrientation() {
+            try {
+                // Пробуем заблокировать через Screen Orientation API
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('portrait');
+                }
+                // Дополнительная блокировка через устаревший API
+                if (screen.lockOrientation) {
+                    screen.lockOrientation('portrait');
+                } else if (screen.mozLockOrientation) {
+                    screen.mozLockOrientation('portrait');
+                } else if (screen.msLockOrientation) {
+                    screen.msLockOrientation('portrait');
+                }
+            } catch (error) {
+                console.warn('Не удалось заблокировать ориентацию:', error);
+            }
         }
+        
+        // Вызываем блокировку ориентации сразу
+        lockOrientation();
     </script>
     <style>
         body, html {
@@ -380,9 +396,9 @@
             }
         }
 
-        // Запрашиваем доступ к датчикам устройства
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            document.addEventListener('click', async function requestOrientationAccess() {
+        // Запрашиваем доступ к датчикам устройства сразу при загрузке
+        async function requestSensors() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const response = await DeviceOrientationEvent.requestPermission();
                     if (response === 'granted') {
@@ -392,17 +408,18 @@
                 } catch (error) {
                     console.error('Ошибка при запросе доступа к датчикам:', error);
                 }
-                document.removeEventListener('click', requestOrientationAccess);
-            }, { once: true });
-        } else {
-            compassGranted = true;
-            initCompassWatch();
+            } else {
+                compassGranted = true;
+                initCompassWatch();
+            }
         }
 
         // Функция инициализации отслеживания компаса
         function initCompassWatch() {
-            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.addEventListener('deviceorientation', handleOrientation, true);
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                window.addEventListener('deviceorientation', handleOrientation, true);
+            }
         }
 
         // Функция обработки ориентации устройства
@@ -414,12 +431,12 @@
                 heading = event.webkitCompassHeading;
             } else if (event.alpha !== null) {
                 // для Android устройств
-                heading = event.alpha;
+                heading = 360 - event.alpha; // Инвертируем направление для Android
             }
 
             if (typeof heading === 'number') {
-                // Преобразуем градусы в радианы и инвертируем для правильного направления
-                currentRotation = (-heading * Math.PI) / 180;
+                // Преобразуем градусы в радианы
+                currentRotation = (heading * Math.PI) / 180;
                 
                 if (locationFeature) {
                     const style = createLocationStyle(currentRotation);
@@ -550,9 +567,11 @@
             alignMap();
         });
 
-        // Автоматическое определение местоположения при загрузке
-        window.addEventListener('load', function() {
-            getLocation(); // Убираем вызов initMap(), так как он будет вызван в getLocation()
+        // Автоматическое определение местоположения и запуск компаса при загрузке
+        window.addEventListener('load', async function() {
+            await lockOrientation(); // Блокируем ориентацию
+            await requestSensors(); // Запрашиваем доступ к датчикам
+            getLocation(); // Запускаем определение местоположения
         });
 
         // Остановка отслеживания при закрытии страницы
