@@ -267,10 +267,19 @@
             });
 
             const style = new ol.style.Style({
-                image: new ol.style.Image({
-                    element: createMarkerElement(currentRotation),
-                    scale: 1.2,
-                    anchor: [0.5, 0.5]
+                image: new ol.style.Icon({
+                    anchor: [0.5, 0.5],
+                    anchorXUnits: 'fraction',
+                    anchorYUnits: 'fraction',
+                    rotateWithView: true,
+                    rotation: currentRotation * Math.PI / 180,
+                    src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+                        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="16" fill="#E31E24"/>
+                            <circle cx="16" cy="16" r="5" fill="white"/>
+                            <path d="M16 0L19 16L16 13L13 16L16 0Z" fill="#E31E24"/>
+                        </svg>
+                    `)
                 })
             });
 
@@ -310,10 +319,19 @@
                 currentRotation = event.alpha;
                 if (locationFeature) {
                     const style = new ol.style.Style({
-                        image: new ol.style.Image({
-                            element: createMarkerElement(currentRotation),
-                            scale: 1,
-                            anchor: [0.5, 0.5]
+                        image: new ol.style.Icon({
+                            anchor: [0.5, 0.5],
+                            anchorXUnits: 'fraction',
+                            anchorYUnits: 'fraction',
+                            rotateWithView: true,
+                            rotation: currentRotation * Math.PI / 180,
+                            src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+                                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="16" cy="16" r="16" fill="#E31E24"/>
+                                    <circle cx="16" cy="16" r="5" fill="white"/>
+                                    <path d="M16 0L19 16L16 13L13 16L16 0Z" fill="#E31E24"/>
+                                </svg>
+                            `)
                         })
                     });
                     locationFeature.setStyle(style);
