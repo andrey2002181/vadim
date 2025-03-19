@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Карта мира</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 1000;
+        }
+        .header-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--tg-theme-text-color, #000000);
+            margin: 0;
+        }
+        .location-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--tg-theme-button-color, #2481cc);
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .location-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .location-button svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--tg-theme-button-text-color, #ffffff);
+        }
+        .location-button.active {
+            background: var(--tg-theme-button-color, #2481cc);
+        }
+        .location-button.active svg {
+            fill: var(--tg-theme-button-text-color, #ffffff);
+        }
+        .location-marker {
+            width: 20px;
+            height: 20px;
+            background: #2196F3;
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            }
+            50% {
+                transform: scale(1.2);
+                box-shadow: 0 0 20px rgba(33, 150, 243, 0.8);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            }
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--tg-theme-bg-color, #ffffff);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            transition: opacity 0.3s ease;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--tg-theme-hint-color, #999999);
+            border-top: 3px solid var(--tg-theme-button-color, #2481cc);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            margin-top: 16px;
+            color: var(--tg-theme-hint-color, #999999);
+            font-size: 15px;
+        }
+        .error-message {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 2000;
+            text-align: center;
+        }
+        .error-message.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="header-title">Карта</h1>
+    </div>
+    <div id="map"></div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Определение местоположения...</div>
+    </div>
+    <div class="error-message" id="errorMessage"></div>
+    <button class="location-button" id="locationButton" title="Центрировать на моем местоположении">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
+    </button>
+    <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
+    <script>
+        let locationFeature = null;
+        let locationLayer = null;
+        let watchId = null;
+        let map = null;
+        let isFirstLocation = true;
 
+        // Инициализация Telegram Mini App
+        let tg;
+        try {
+            tg = window.Telegram.WebApp;
+            if (tg) {
+                tg.expand();
+            }
+        } catch (error) {
+            console.warn('Telegram Web App не доступен:', error);
+        }
+
+        // Проверка поддержки OpenLayers
+        if (typeof ol === 'undefined') {
+            showError('Ошибка загрузки карты. Проверьте подключение к интернету.');
+            document.getElementById('map').innerHTML = 'Ошибка загрузки карты';
+        }
+
+        // Функция показа ошибки
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+            setTimeout(() => {
+                errorElement.classList.remove('show');
+            }, 3000);
+        }
+
+        // Функция инициализации карты
+        function initMap(coordinates) {
+            map = new ol.Map({
+                target: 'map',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM({
+                            attributions: '© OpenStreetMap contributors'
+                        })
+                    })
+                ],
+                view: new ol.View({
+                    center: coordinates || ol.proj.fromLonLat([0, 0]),
+                    zoom: coordinates ? 18 : 2
+                })
+            });
+
+            // Создаем слой для местоположения
+            locationLayer = new ol.layer.Vector({
+                source: new ol.source.Vector({
+                    features: []
+                })
+            });
+            map.addLayer(locationLayer);
+        }
+
+        // Функция обновления местоположения
+        function updateLocation(position) {
+            const coordinates = ol.proj.fromLonLat([position.coords.longitude, position.coords.latitude]);
+            
+            if (!map) {
+                initMap(coordinates);
+            }
+            
+            if (locationFeature) {
+                locationLayer.getSource().removeFeature(locationFeature);
+            }
+
+            locationFeature = new ol.Feature({
+                geometry: new ol.geom.Point(coordinates)
+            });
+
+            const style = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({
+                        color: '#2481cc'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#ffffff',
+                        width: 2
+                    })
+                })
+            });
+
+            locationFeature.setStyle(style);
+            locationLayer.getSource().addFeature(locationFeature);
+
+            if (isFirstLocation) {
+                centerOnLocation(true);
+                isFirstLocation = false;
+                document.getElementById('loadingOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // Функция центрирования на местоположении
+        function centerOnLocation(animate = false) {
+            if (locationFeature && map) {
+                const coordinates = locationFeature.getGeometry().getCoordinates();
+                if (animate) {
+                    map.getView().animate({
+                        center: coordinates,
+                        zoom: 18,
+                        duration: 2000,
+                        easing: ol.easing.easeOut
+                    });
+                } else {
+                    map.getView().animate({
+                        center: coordinates,
+                        zoom: 18,
+                        duration: 1000
+                    });
+                }
+            }
+        }
+
+        // Функция получения местоположения
+        function getLocation() {
+            if (!navigator.geolocation) {
+                showError('Геолокация не поддерживается вашим браузером');
+                return;
+            }
+
+            document.getElementById('locationButton').classList.add('active');
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            document.getElementById('loadingOverlay').style.opacity = '1';
+            
+            try {
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        updateLocation(position);
+                    },
+                    function(error) {
+                        console.error('Ошибка получения местоположения:', error);
+                        let errorMessage = 'Не удалось получить ваше местоположение.';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Доступ к геолокации запрещен. Проверьте настройки браузера.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Информация о местоположении недоступна.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Превышено время ожидания определения местоположения.';
+                                break;
+                            default:
+                                errorMessage = 'Произошла ошибка при определении местоположения.';
+                        }
+                        showError(errorMessage);
+                        document.getElementById('loadingOverlay').style.opacity = '0';
+                        setTimeout(() => {
+                            document.getElementById('loadingOverlay').style.display = 'none';
+                        }, 300);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } catch (error) {
+                console.error('Ошибка при запросе геолокации:', error);
+                showError('Произошла ошибка при запросе геолокации');
+                document.getElementById('loadingOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                }, 300);
+            }
+        }
+
+        // Обработчик нажатия на кнопку
+        document.getElementById('locationButton').addEventListener('click', function() {
+            if (!watchId) {
+                getLocation();
+            } else {
+                centerOnLocation();
+            }
+        });
+
+        // Автоматическое определение местоположения при загрузке
+        window.addEventListener('load', function() {
+            initMap();
+            getLocation();
+        });
+
+        // Остановка отслеживания при закрытии страницы
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html> 
