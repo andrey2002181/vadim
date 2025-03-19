@@ -3,7 +3,8 @@
 <head>
     <title>Карта мира</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=portrait">
+    <meta http-equiv="ScreenOrientation" content="autoLock:portrait">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
     <style>
         body, html {
@@ -188,6 +189,7 @@
         let map = null;
         let isFirstLocation = true;
         let currentRotation = 0;
+        let compassGranted = false;
 
         // Инициализация Telegram Mini App
         let tg;
@@ -313,10 +315,45 @@
             }
         }
 
-        // Обработчик изменения ориентации устройства
-        window.addEventListener('deviceorientation', function(event) {
-            if (event.alpha !== null) {
-                currentRotation = event.alpha;
+        // Запрашиваем доступ к датчикам устройства
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            document.addEventListener('click', async function requestOrientationAccess() {
+                try {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
+                        compassGranted = true;
+                        initCompassWatch();
+                    }
+                } catch (error) {
+                    console.error('Ошибка при запросе доступа к датчикам:', error);
+                }
+                document.removeEventListener('click', requestOrientationAccess);
+            }, { once: true });
+        } else {
+            compassGranted = true;
+            initCompassWatch();
+        }
+
+        // Функция инициализации отслеживания компаса
+        function initCompassWatch() {
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        }
+
+        // Функция обработки ориентации устройства
+        function handleOrientation(event) {
+            let heading;
+            
+            if (event.webkitCompassHeading) {
+                // для iOS устройств
+                heading = event.webkitCompassHeading;
+            } else if (event.alpha !== null) {
+                // для Android устройств
+                heading = 360 - event.alpha;
+            }
+
+            if (typeof heading === 'number') {
+                currentRotation = heading * (Math.PI / 180);
                 if (locationFeature) {
                     const style = new ol.style.Style({
                         image: new ol.style.Icon({
@@ -324,7 +361,7 @@
                             anchorXUnits: 'fraction',
                             anchorYUnits: 'fraction',
                             rotateWithView: true,
-                            rotation: currentRotation * Math.PI / 180,
+                            rotation: currentRotation,
                             src: 'data:image/svg+xml;utf8,' + encodeURIComponent(`
                                 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="16" cy="16" r="16" fill="#E31E24"/>
@@ -337,7 +374,7 @@
                     locationFeature.setStyle(style);
                 }
             }
-        });
+        }
 
         // Функция получения местоположения
         function getLocation() {
