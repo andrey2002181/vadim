@@ -2,9 +2,24 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Битва полов</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Запрет выделения текста и долгого тапа */
+        * {
+            -webkit-touch-callout: none; /* отключить всплывающее меню на iOS */
+            -webkit-user-select: none;   /* отключить выделение на iOS Safari */
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;           /* отключить выделение на всех браузерах */
+        }
+
+        html, body {
+            touch-action: manipulation; /* оптимизация для сенсорного экрана */
+        }
+    </style>
 </head>
 <body>
 
