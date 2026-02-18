@@ -31,7 +31,7 @@ body {
     justify-content: center;
     align-items: flex-start;
     overflow-x: hidden;
-    padding-top: 40px;
+    padding-top: 10px;
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -732,3 +732,4 @@ label {
         padding: 12px;
     }
 }
+
