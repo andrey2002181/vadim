@@ -1,0 +1,734 @@
+/* Фон с изображением */
+* {
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Разрешить выделение текста только для карточки с вопросом */
+.card {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+input[type="range"] {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+}
+
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: url('background.jpg') no-repeat center center;
+    background-size: cover;
+    position: relative;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-x: hidden;
+    padding-top: 40px;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Overlay для затемнения, чтобы текст читался */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 0;
+}
+
+/* Контент поверх overlay */
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* Экраны */
+.screen {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    transform: translateY(0);
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0) scale(0.95);
+}
+
+.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+}
+
+/* Счёт и ход команды */
+.score {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.score > div {
+    flex: 1;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.score > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.score > div:first-child {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+    border-color: rgba(102, 126, 234, 0.5);
+}
+
+.score > div:last-child {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.3) 0%, rgba(255, 159, 64, 0.3) 100%);
+    border-color: rgba(255, 107, 107, 0.5);
+}
+
+.score span {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    margin-top: 8px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease;
+}
+
+.score > div:first-child span {
+    color: #a8b5ff;
+    text-shadow: 0 0 10px rgba(168, 181, 255, 0.5), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.score > div:last-child span {
+    color: #ffb3b3;
+    text-shadow: 0 0 10px rgba(255, 179, 179, 0.5), 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.score span.score-update {
+    animation: scorePulse 0.4s ease;
+}
+
+@keyframes scorePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.team-turn {
+    margin: 20px 0;
+    padding: 18px 24px;
+    border-radius: 16px;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(102, 126, 234, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: teamTurnPulse 2s ease-in-out infinite;
+}
+
+.team-turn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+@keyframes teamTurnPulse {
+    0%, 100% {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                    0 0 30px rgba(102, 126, 234, 0.2);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3),
+                    0 0 40px rgba(102, 126, 234, 0.4);
+    }
+}
+
+.team-turn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4),
+                0 0 50px rgba(102, 126, 234, 0.3);
+}
+
+/* Кнопки */
+button {
+    width: 100%;
+    padding: 16px;
+    font-size: 20px;
+    border: none;
+    border-radius: 16px;
+    color: white;
+    cursor: pointer;
+    outline: none;
+    margin-top: 10px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease, border-color 0.3s ease;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Кнопки в меню */
+#menu button {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.5) 0%, rgba(118, 75, 162, 0.5) 100%);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4),
+                0 0 30px rgba(102, 126, 234, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    padding: 18px 24px;
+    font-size: 22px;
+    position: relative;
+    overflow: hidden;
+}
+
+#menu button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+#menu button:hover::before {
+    left: 100%;
+}
+
+#menu button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5),
+                0 0 40px rgba(102, 126, 234, 0.3);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.6) 0%, rgba(118, 75, 162, 0.6) 100%);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* Кнопка "Взять карточку" активная */
+#cardBtn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+/* Кнопка "Взять карточку" неактивная */
+#cardBtn.disabled {
+    background: white;
+    color: #555;
+    cursor: default;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
+/* Контейнер карточки */
+.card-container {
+    position: relative;
+    overflow: visible;
+    border: none;
+    outline: none;
+}
+
+.card {
+    margin-top: 30px;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    font-size: 22px;
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7),
+                 0 0 20px rgba(255, 255, 255, 0.1);
+    min-height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    border: none;
+    outline: none;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+    line-height: 1.5;
+}
+
+.card.flip {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+    filter: blur(4px);
+}
+
+.card.reveal {
+    animation: cardReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+        filter: blur(8px);
+    }
+    50% {
+        transform: translateY(-5px) scale(1.02);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Кнопки ответа */
+#answerBtns {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+#answerBtns button {
+    width: 48%;
+    font-size: 18px;
+}
+
+.correct {
+    background: linear-gradient(135deg, rgba(72, 187, 120, 0.4) 0%, rgba(56, 142, 60, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(72, 187, 120, 0.5);
+    box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s, opacity 0.3s, border-color 0.3s;
+}
+
+.correct:hover {
+    background: linear-gradient(135deg, rgba(72, 187, 120, 0.5) 0%, rgba(56, 142, 60, 0.5) 100%);
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+    border-color: rgba(72, 187, 120, 0.7);
+}
+
+.correct:active {
+    background: linear-gradient(135deg, rgba(72, 187, 120, 0.6) 0%, rgba(56, 142, 60, 0.6) 100%);
+}
+
+.wrong {
+    background: linear-gradient(135deg, rgba(239, 83, 80, 0.4) 0%, rgba(198, 40, 40, 0.4) 100%);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(239, 83, 80, 0.5);
+    box-shadow: 0 4px 15px rgba(239, 83, 80, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s, opacity 0.3s, border-color 0.3s;
+}
+
+.wrong:hover {
+    background: linear-gradient(135deg, rgba(239, 83, 80, 0.5) 0%, rgba(198, 40, 40, 0.5) 100%);
+    box-shadow: 0 6px 20px rgba(239, 83, 80, 0.4);
+    border-color: rgba(239, 83, 80, 0.7);
+}
+
+.wrong:active {
+    background: linear-gradient(135deg, rgba(239, 83, 80, 0.6) 0%, rgba(198, 40, 40, 0.6) 100%);
+}
+
+/* Контейнер выбора очков */
+.score-selector {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 18px;
+    padding: 24px;
+    margin: 20px 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 4px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.score-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.label-text {
+    flex: 1;
+}
+
+.score-display {
+    font-size: 32px;
+    font-weight: 800;
+    color: #64b5f6;
+    text-shadow: 0 0 15px rgba(100, 181, 246, 0.6),
+                 0 2px 8px rgba(0, 0, 0, 0.5);
+    min-width: 50px;
+    text-align: right;
+    transition: transform 0.2s ease;
+}
+
+.score-display.score-update {
+    animation: scorePulse 0.4s ease;
+}
+
+/* Ползунок очков */
+input[type="range"] {
+    width: 100%;
+    height: 8px;
+    margin: 0;
+    padding: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+    touch-action: none;
+}
+
+/* Track для WebKit браузеров */
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    border: none;
+}
+
+/* Thumb для WebKit браузеров */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5),
+                0 0 15px rgba(102, 126, 234, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-top: -8px;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.6),
+                0 0 20px rgba(102, 126, 234, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.3);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.7),
+                0 0 25px rgba(102, 126, 234, 0.5);
+}
+
+/* Track для Firefox */
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    border: none;
+}
+
+/* Thumb для Firefox */
+input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.5),
+                0 0 15px rgba(102, 126, 234, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 3px 12px rgba(102, 126, 234, 0.6),
+                0 0 20px rgba(102, 126, 234, 0.4);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+    transform: scale(1.3);
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.7),
+                0 0 25px rgba(102, 126, 234, 0.5);
+}
+
+/* Улучшение для мобильных устройств */
+@media (max-width: 480px) {
+    input[type="range"]::-webkit-slider-thumb {
+        width: 32px;
+        height: 32px;
+        margin-top: -12px;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .score-selector {
+        padding: 20px;
+    }
+    
+    .score-display {
+        font-size: 28px;
+    }
+}
+
+/* Заголовки и базовый текст */
+h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 32px;
+    font-weight: 800;
+    padding: 18px 28px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 4px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+    border: none;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1.5px;
+    position: relative;
+    overflow: hidden;
+    background-image: 
+        linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    color: #ffffff;
+    text-transform: uppercase;
+    font-family: 'Poppins', sans-serif;
+}
+
+h1 .title-blue {
+    color: #64b5f6;
+    text-shadow: 0 0 15px rgba(100, 181, 246, 0.6),
+                 0 2px 8px rgba(0, 0, 0, 0.5);
+    display: inline-block;
+}
+
+h1 .title-pink {
+    color: #f48fb1;
+    text-shadow: 0 0 15px rgba(244, 143, 177, 0.6),
+                 0 2px 8px rgba(0, 0, 0, 0.5);
+    display: inline-block;
+}
+
+h1::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.2) 0%, 
+        transparent 50%, 
+        rgba(118, 75, 162, 0.2) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+h1:hover::before {
+    opacity: 1;
+}
+
+h1::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%);
+    animation: titlePulse 3s ease-in-out infinite;
+}
+
+@keyframes titlePulse {
+    0%, 100% {
+        width: 0;
+        height: 0;
+        opacity: 0;
+    }
+    50% {
+        width: 150px;
+        height: 150px;
+        opacity: 0.3;
+    }
+}
+
+h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    padding: 18px 24px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                0 4px 20px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+/* Адаптив под телефоны */
+@media (max-width: 480px) {
+    body {
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
+    .app {
+        padding: 16px 12px 24px;
+        justify-content: flex-start;
+    }
+    
+    .screen {
+        top: 0;
+        transform: translateY(0);
+    }
+    
+    .hidden {
+        transform: translateY(0) scale(0.95);
+    }
+    
+    .visible {
+        transform: translateY(0) scale(1);
+    }
+
+    h1 {
+        font-size: 24px;
+        padding: 14px 20px;
+        margin-bottom: 16px;
+        letter-spacing: 1px;
+    }
+    
+    #menu button {
+        padding: 16px 20px;
+        font-size: 20px;
+    }
+
+    .score {
+        gap: 10px;
+        margin: 16px 0;
+    }
+    
+    .score > div {
+        padding: 12px 16px;
+        font-size: 16px;
+    }
+    
+    .score span {
+        font-size: 24px;
+        margin-top: 6px;
+    }
+
+    .team-turn {
+        font-size: 18px;
+        padding: 14px 18px;
+        margin: 16px 0;
+    }
+
+    .card {
+        font-size: 18px;
+        padding: 20px;
+        min-height: 100px;
+    }
+
+    button {
+        font-size: 18px;
+        padding: 14px;
+    }
+
+    #answerBtns button {
+        font-size: 16px;
+        padding: 12px;
+    }
+}
