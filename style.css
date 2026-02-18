@@ -1,0 +1,148 @@
+/* Фон с изображением */
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: url('background.jpg') no-repeat center center fixed;
+    background-size: cover;
+    position: relative;
+    color: white;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Overlay для затемнения, чтобы текст читался */
+body::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 0;
+}
+
+/* Контент поверх overlay */
+.app {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    width: 100%;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Экраны */
+.screen {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.95);
+}
+
+.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: scale(1);
+}
+
+/* Счёт и ход команды */
+.score {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    font-size: 20px;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+}
+
+.team-turn {
+    margin: 20px 0;
+    font-size: 24px;
+    font-weight: 600;
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.8);
+}
+
+/* Кнопки */
+button {
+    width: 100%;
+    padding: 16px;
+    font-size: 20px;
+    border: none;
+    border-radius: 16px;
+    color: white;
+    cursor: pointer;
+    outline: none;
+    margin-top: 10px;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s, opacity 0.3s;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+/* Кнопка "Взять карточку" неактивная */
+#cardBtn.disabled {
+    background: white;
+    color: #555;
+    cursor: default;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
+/* Контейнер карточки с 3D flip */
+.card-container {
+    perspective: 1000px;
+}
+
+.card {
+    margin-top: 30px;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    font-size: 22px;
+    min-height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.card.flip {
+    transform: rotateY(180deg);
+}
+
+/* Кнопки ответа */
+#answerBtns {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+}
+
+#answerBtns button {
+    width: 48%;
+    font-size: 18px;
+}
+
+.correct {
+    background: linear-gradient(45deg, #00ff7f, #0fb14a);
+}
+
+.wrong {
+    background: linear-gradient(45deg, #ff4b4b, #c70000);
+}
+
+/* Ползунок очков */
+input[type="range"] {
+    width: 80%;
+    margin: 20px 0;
+}
