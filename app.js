@@ -1,3 +1,36 @@
+// Предотвращение стандартных жестов браузера
+document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+document.addEventListener('touchend', function(e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// Предотвращение контекстного меню
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// Предотвращение выделения текста двойным кликом
+document.addEventListener('selectstart', function(e) {
+    if (!e.target.classList.contains('card')) {
+        e.preventDefault();
+        return false;
+    }
+});
+
 let currentTeam = "men";
 let menScore = 0;
 let womenScore = 0;
