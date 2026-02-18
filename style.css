@@ -1,4 +1,4 @@
-/* Фон с изображением */
+/* Фон адаптивный */
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
@@ -9,10 +9,11 @@ body {
     height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: center; /* центрируем по вертикали */
+    overflow: hidden; /* убираем скролл */
 }
 
-/* Overlay для затемнения, чтобы текст читался */
+/* Overlay для читаемости */
 body::before {
     content: "";
     position: absolute;
@@ -22,12 +23,11 @@ body::before {
     z-index: 0;
 }
 
-/* Контент поверх overlay */
 .app {
     position: relative;
     z-index: 1;
     max-width: 420px;
-    width: 100%;
+    width: 95%;
     padding: 20px;
     text-align: center;
 }
@@ -58,13 +58,13 @@ body::before {
     display: flex;
     justify-content: space-between;
     margin: 20px 0;
-    font-size: 20px;
+    font-size: 18px;
     text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
 }
 
 .team-turn {
-    margin: 20px 0;
-    font-size: 24px;
+    margin: 15px 0;
+    font-size: 22px;
     font-weight: 600;
     text-shadow: 1px 1px 6px rgba(0,0,0,0.8);
 }
@@ -72,15 +72,16 @@ body::before {
 /* Кнопки */
 button {
     width: 100%;
-    padding: 16px;
-    font-size: 20px;
+    padding: 14px;
+    font-size: 18px;
     border: none;
-    border-radius: 16px;
+    border-radius: 14px;
     color: white;
     cursor: pointer;
     outline: none;
     margin-top: 10px;
     transition: transform 0.15s, box-shadow 0.15s, background 0.3s, opacity 0.3s;
+    touch-action: manipulation;
 }
 
 button:active {
@@ -99,20 +100,21 @@ button:active {
 /* Контейнер карточки с 3D flip */
 .card-container {
     perspective: 1000px;
+    margin-top: 20px;
 }
 
 .card {
-    margin-top: 30px;
-    padding: 30px;
-    border-radius: 20px;
+    margin-top: 20px;
+    padding: 25px;
+    border-radius: 18px;
     background: rgba(255,255,255,0.2);
     backdrop-filter: blur(10px);
-    font-size: 22px;
-    min-height: 120px;
+    font-size: 20px;
+    min-height: 110px;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
     transition: transform 0.6s;
     transform-style: preserve-3d;
 }
@@ -125,12 +127,12 @@ button:active {
 #answerBtns {
     display: flex;
     justify-content: space-between;
-    margin-top: 25px;
+    margin-top: 20px;
 }
 
 #answerBtns button {
     width: 48%;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .correct {
@@ -141,8 +143,32 @@ button:active {
     background: linear-gradient(45deg, #ff4b4b, #c70000);
 }
 
-/* Ползунок очков */
+/* Ползунок для сенсорных устройств */
 input[type="range"] {
-    width: 80%;
-    margin: 20px 0;
+    width: 100%;
+    margin: 15px 0;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.2);
+    height: 6px;
+    border-radius: 3px;
+    touch-action: pan-x;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff4ecd;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff4ecd;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
